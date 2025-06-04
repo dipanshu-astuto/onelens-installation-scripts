@@ -165,15 +165,13 @@ fi
 echo "Total number of pods in the cluster: $TOTAL_PODS"
 
 helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts && helm repo update
-
-# Resource allocation based on cluster size
 if [ "$TOTAL_PODS" -lt 100 ]; then
     echo "Setting resources for small cluster (<100 pods)"
     # Prometheus resources
     PROMETHEUS_CPU_REQUEST="116m"
-    PROMETHEUS_MEMORY_REQUEST="1.16Gi"
+    PROMETHEUS_MEMORY_REQUEST="1188Mi"
     PROMETHEUS_CPU_LIMIT="288m"
-    PROMETHEUS_MEMORY_LIMIT="1.73Gi"
+    PROMETHEUS_MEMORY_LIMIT="1771Mi"
     
     # OpenCost resources
     OPENCOST_CPU_REQUEST="17m"
@@ -191,9 +189,9 @@ elif [ "$TOTAL_PODS" -lt 500 ]; then
     echo "Setting resources for medium cluster (100-499 pods)"
     # Prometheus resources
     PROMETHEUS_CPU_REQUEST="230m"
-    PROMETHEUS_MEMORY_REQUEST="1.73Gi"
+    PROMETHEUS_MEMORY_REQUEST="1771Mi"
     PROMETHEUS_CPU_LIMIT="345m"
-    PROMETHEUS_MEMORY_LIMIT="2.53Gi"
+    PROMETHEUS_MEMORY_LIMIT="2591Mi"
     
     # OpenCost resources
     OPENCOST_CPU_REQUEST="29m"
@@ -211,9 +209,9 @@ elif [ "$TOTAL_PODS" -lt 1000 ]; then
     echo "Setting resources for large cluster (500-999 pods)"
     # Prometheus resources
     PROMETHEUS_CPU_REQUEST="288m"
-    PROMETHEUS_MEMORY_REQUEST="3.45Gi"
+    PROMETHEUS_MEMORY_REQUEST="3533Mi"
     PROMETHEUS_CPU_LIMIT="517m"
-    PROMETHEUS_MEMORY_LIMIT="5.86Gi"
+    PROMETHEUS_MEMORY_LIMIT="6001Mi"
     
     # OpenCost resources
     OPENCOST_CPU_REQUEST="69m"
@@ -231,9 +229,9 @@ elif [ "$TOTAL_PODS" -lt 1500 ]; then
     echo "Setting resources for extra large cluster (1000-1499 pods)"
     # Prometheus resources
     PROMETHEUS_CPU_REQUEST="316m"
-    PROMETHEUS_MEMORY_REQUEST="5.17Gi"
+    PROMETHEUS_MEMORY_REQUEST="5294Mi"
     PROMETHEUS_CPU_LIMIT="603m"
-    PROMETHEUS_MEMORY_LIMIT="7.53Gi"
+    PROMETHEUS_MEMORY_LIMIT="7710Mi"
     
     # OpenCost resources
     OPENCOST_CPU_REQUEST="92m"
@@ -251,9 +249,9 @@ else
     echo "Setting resources for very large cluster (1500+ pods)"
     # Prometheus resources
     PROMETHEUS_CPU_REQUEST="345m"
-    PROMETHEUS_MEMORY_REQUEST="6.9Gi"
+    PROMETHEUS_MEMORY_REQUEST="7066Mi"
     PROMETHEUS_CPU_LIMIT="690m"
-    PROMETHEUS_MEMORY_LIMIT="9.2Gi"
+    PROMETHEUS_MEMORY_LIMIT="9421Mi"
     
     # OpenCost resources
     OPENCOST_CPU_REQUEST="115m"
