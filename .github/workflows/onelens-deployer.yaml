@@ -1,0 +1,139 @@
+name: Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart
+
+permissions:
+  id-token: write
+  contents: write
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'Dockerfile'
+      - 'charts/onelensdeployer/**'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: public.ecr.aws/w7k6q5m9/onelens-deployer
+  REGION: us-east-1
+
+jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      docker_changed: ${{ steps.check_docker.outputs.changed }}
+      chart_version_changed: ${{ steps.chart_version.outputs.version_changed }}
+      new_chart_version: ${{ steps.chart_version.outputs.new_version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # needed for diff between commits
+
+      - name: Check if Dockerfile changed
+        id: check_docker
+        run: |
+          git fetch origin master --depth=1
+          docker_diff=$(git diff --name-only origin/master HEAD | grep '^Dockerfile' || true)
+          if [ -n "$docker_diff" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect Chart Version Change
+        id: chart_version
+        run: |
+          CHART_PATH="charts/onelensdeployer/Chart.yaml"
+          CURRENT_VERSION=$(yq '.version' $CHART_PATH)
+
+          git fetch origin master --depth=1
+          git show origin/master:$CHART_PATH > old_chart.yaml || echo "version: 0.0.0" > old_chart.yaml
+          PREVIOUS_VERSION=$(yq '.version' old_chart.yaml)
+
+          echo "Current: $CURRENT_VERSION, Previous: $PREVIOUS_VERSION"
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  build_and_push_docker:
+    needs: detect_changes
+    if: needs.detect_changes.outputs.docker_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+          aws-region: ${{ env.REGION }}
+          role-session-name: GitHubActionsSession
+
+      - name: Authenticate to AWS ECR Public
+        run: |
+          aws ecr-public get-login-password --region $REGION \
+          | docker login --username AWS --password-stdin $IMAGE_NAME
+
+      - name: Clone Onelens Installation Scripts
+        run: |
+          git clone git@github.com:astuto-ai/onelens-installation-scripts.git
+
+      - name: Build and Push Multi-Arch Docker Image
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE_NAME:latest \
+            --push \
+            ./onelens-installation-scripts
+
+  package_and_push_helm:
+    needs: detect_changes
+    if: needs.detect_changes.outputs.chart_version_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+          aws-region: ${{ env.REGION }}
+          role-session-name: GitHubActionsSession
+
+      - name: Authenticate Helm with AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Prepare chart packaging
+        working-directory: charts/onelensdeployer
+        run: |
+          echo "📥 Updating Helm dependencies"
+          helm dependency update
+          echo "📦 Packaging Helm chart"
+          helm package .
+
+      - name: Commit and push packaged chart to root
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd onelens-installation-scripts
+          mv charts/onelensdeployer/onelensdeployer-*.tgz .
+          echo "🗂️ Updating Helm repo index"
+          helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add onelensdeployer-*.tgz index.yaml
+          git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
+
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
