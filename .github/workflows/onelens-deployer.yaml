@@ -87,12 +87,18 @@ jobs:
     needs: detect_changes
     if: needs.detect_changes.outputs.docker_changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -101,22 +107,22 @@ jobs:
           aws-region: ${{ env.REGION }}
           role-session-name: GitHubActionsSession
 
-      - name: Authenticate to AWS ECR Public
-        run: |
-          aws ecr-public get-login-password --region $REGION \
-          | docker login --username AWS --password-stdin $IMAGE_NAME
-
-      - name: Clone Onelens Installation Scripts
-        run: |
-          git clone https://github.com/astuto-ai/onelens-installation-scripts.git
+      - name: Login to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
 
       - name: Build and Push Multi-Arch Docker Image
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            -t $IMAGE_NAME:latest \
-            --push \
-            ./onelens-installation-scripts
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
 
   package_and_push_helm:
     needs: detect_changes
