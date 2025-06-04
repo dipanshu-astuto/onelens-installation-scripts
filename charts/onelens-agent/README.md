@@ -4,7 +4,7 @@ This Helm chart provides the configuration for deploying the OneLens Agent in Ku
 
 ## Overview
 
-The OneLens Agent chart serves as a comprehensive solution for deploying and managing OneLens agents in your Kubernetes cluster. This chart handles the deployment, configuration, and service setup required for the agent to operate effectively, along with supporting monitoring and cost analysis tools.
+The OneLens Agent chart serves as a comprehensive solution for deploying and managing OneLens agents in your Kubernetes cluster. This chart handles the deployment, configuration, and service setup required for  agent to operate effectively, along with supporting monitoring and cost analysis tools.
 
 ## Versioning
 
