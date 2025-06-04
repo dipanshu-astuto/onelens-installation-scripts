@@ -166,12 +166,106 @@ echo "Total number of pods in the cluster: $TOTAL_PODS"
 
 helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts && helm repo update
 
+# Resource allocation based on cluster size
 if [ "$TOTAL_PODS" -lt 100 ]; then
-    CPU_REQUEST="500m"
-    MEMORY_REQUEST="2000Mi"
+    echo "Setting resources for small cluster (<100 pods)"
+    # Prometheus resources
+    PROMETHEUS_CPU_REQUEST="115m"
+    PROMETHEUS_MEMORY_REQUEST="1.15Gi"
+    PROMETHEUS_CPU_LIMIT="288m"
+    PROMETHEUS_MEMORY_LIMIT="1.73Gi"
+    
+    # OpenCost resources
+    OPENCOST_CPU_REQUEST="17m"
+    OPENCOST_MEMORY_REQUEST="63Mi"
+    OPENCOST_CPU_LIMIT="35m"
+    OPENCOST_MEMORY_LIMIT="92Mi"
+    
+    # OneLens Agent resources
+    ONELENS_CPU_REQUEST="104m"
+    ONELENS_MEMORY_REQUEST="115Mi"
+    ONELENS_CPU_LIMIT="138m"
+    ONELENS_MEMORY_LIMIT="150Mi"
+    
+elif [ "$TOTAL_PODS" -lt 500 ]; then
+    echo "Setting resources for medium cluster (100-499 pods)"
+    # Prometheus resources
+    PROMETHEUS_CPU_REQUEST="230m"
+    PROMETHEUS_MEMORY_REQUEST="1.73Gi"
+    PROMETHEUS_CPU_LIMIT="345m"
+    PROMETHEUS_MEMORY_LIMIT="2.53Gi"
+    
+    # OpenCost resources
+    OPENCOST_CPU_REQUEST="29m"
+    OPENCOST_MEMORY_REQUEST="69Mi"
+    OPENCOST_CPU_LIMIT="46m"
+    OPENCOST_MEMORY_LIMIT="115Mi"
+    
+    # OneLens Agent resources
+    ONELENS_CPU_REQUEST="127m"
+    ONELENS_MEMORY_REQUEST="127Mi"
+    ONELENS_CPU_LIMIT="184m"
+    ONELENS_MEMORY_LIMIT="161Mi"
+    
+elif [ "$TOTAL_PODS" -lt 1000 ]; then
+    echo "Setting resources for large cluster (500-999 pods)"
+    # Prometheus resources
+    PROMETHEUS_CPU_REQUEST="288m"
+    PROMETHEUS_MEMORY_REQUEST="3.45Gi"
+    PROMETHEUS_CPU_LIMIT="517m"
+    PROMETHEUS_MEMORY_LIMIT="5.86Gi"
+    
+    # OpenCost resources
+    OPENCOST_CPU_REQUEST="69m"
+    OPENCOST_MEMORY_REQUEST="115Mi"
+    OPENCOST_CPU_LIMIT="138m"
+    OPENCOST_MEMORY_LIMIT="253Mi"
+    
+    # OneLens Agent resources
+    ONELENS_CPU_REQUEST="230m"
+    ONELENS_MEMORY_REQUEST="138Mi"
+    ONELENS_CPU_LIMIT="322m"
+    ONELENS_MEMORY_LIMIT="196Mi"
+    
+elif [ "$TOTAL_PODS" -lt 1500 ]; then
+    echo "Setting resources for extra large cluster (1000-1499 pods)"
+    # Prometheus resources
+    PROMETHEUS_CPU_REQUEST="316m"
+    PROMETHEUS_MEMORY_REQUEST="5.17Gi"
+    PROMETHEUS_CPU_LIMIT="603m"
+    PROMETHEUS_MEMORY_LIMIT="7.53Gi"
+    
+    # OpenCost resources
+    OPENCOST_CPU_REQUEST="92m"
+    OPENCOST_MEMORY_REQUEST="161Mi"
+    OPENCOST_CPU_LIMIT="161m"
+    OPENCOST_MEMORY_LIMIT="299Mi"
+    
+    # OneLens Agent resources
+    ONELENS_CPU_REQUEST="288m"
+    ONELENS_MEMORY_REQUEST="150Mi"
+    ONELENS_CPU_LIMIT="391m"
+    ONELENS_MEMORY_LIMIT="207Mi"
+    
 else
-    CPU_REQUEST="1000m"
-    MEMORY_REQUEST="4000Mi"
+    echo "Setting resources for very large cluster (1500+ pods)"
+    # Prometheus resources
+    PROMETHEUS_CPU_REQUEST="345m"
+    PROMETHEUS_MEMORY_REQUEST="6.9Gi"
+    PROMETHEUS_CPU_LIMIT="690m"
+    PROMETHEUS_MEMORY_LIMIT="9.2Gi"
+    
+    # OpenCost resources
+    OPENCOST_CPU_REQUEST="115m"
+    OPENCOST_MEMORY_REQUEST="196Mi"
+    OPENCOST_CPU_LIMIT="184m"
+    OPENCOST_MEMORY_LIMIT="345Mi"
+    
+    # OneLens Agent resources
+    ONELENS_CPU_REQUEST="345m"
+    ONELENS_MEMORY_REQUEST="161Mi"
+    ONELENS_CPU_LIMIT="460m"
+    ONELENS_MEMORY_LIMIT="230Mi"
 fi
 
 # Phase 10: Helm Deployment
@@ -232,8 +326,18 @@ CMD="helm upgrade --install onelens-agent -n onelens-agent --create-namespace on
     --set prometheus-opencost-exporter.opencost.exporter.defaultClusterId=\"$CLUSTER_NAME\" \
     --set onelens-agent.image.tag=\"$IMAGE_TAG\" \
     --set prometheus.server.persistentVolume.enabled=\"$PVC_ENABLED\" \
-    --set prometheus.server.resources.requests.cpu=\"$CPU_REQUEST\" \
-    --set prometheus.server.resources.requests.memory=\"$MEMORY_REQUEST\""
+    --set prometheus.server.resources.requests.cpu=\"$PROMETHEUS_CPU_REQUEST\" \
+    --set prometheus.server.resources.requests.memory=\"$PROMETHEUS_MEMORY_REQUEST\" \
+    --set prometheus.server.resources.limits.cpu=\"$PROMETHEUS_CPU_LIMIT\" \
+    --set prometheus.server.resources.limits.memory=\"$PROMETHEUS_MEMORY_LIMIT\" \
+    --set prometheus-opencost-exporter.opencost.exporter.resources.requests.cpu=\"$OPENCOST_CPU_REQUEST\" \
+    --set prometheus-opencost-exporter.opencost.exporter.resources.requests.memory=\"$OPENCOST_MEMORY_REQUEST\" \
+    --set prometheus-opencost-exporter.opencost.exporter.resources.limits.cpu=\"$OPENCOST_CPU_LIMIT\" \
+    --set prometheus-opencost-exporter.opencost.exporter.resources.limits.memory=\"$OPENCOST_MEMORY_LIMIT\" \
+    --set onelens-agent.resources.requests.cpu=\"$ONELENS_CPU_REQUEST\" \
+    --set onelens-agent.resources.requests.memory=\"$ONELENS_MEMORY_REQUEST\" \
+    --set onelens-agent.resources.limits.cpu=\"$ONELENS_CPU_LIMIT\" \
+    --set onelens-agent.resources.limits.memory=\"$ONELENS_MEMORY_LIMIT\""
 
 # Append tolerations only if set
 if [[ -n "$TOLERATION_KEY" && -n "$TOLERATION_VALUE" && -n "$TOLERATION_OPERATOR" && -n "$TOLERATION_EFFECT" ]]; then
