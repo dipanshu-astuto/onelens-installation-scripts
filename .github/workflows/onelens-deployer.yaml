@@ -136,7 +136,7 @@ jobs:
         run: |
           # Move packaged chart from where it was created to the root of cloned repo
           pwd
-          mv onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz onelens-installation-scripts/
+          mv onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz onelens-installation-scripts/
 
           cd onelens-installation-scripts/
 
