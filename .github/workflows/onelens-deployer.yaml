@@ -28,13 +28,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # needed for diff between commits
+          fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
 
       - name: Check if Dockerfile changed
         id: check_docker
         run: |
           git fetch origin master --depth=1
-          docker_diff=$(git diff --name-only origin/master HEAD | grep '^Dockerfile' || true)
+          docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^Dockerfile' || true)
           if [ -n "$docker_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
@@ -47,8 +52,7 @@ jobs:
           CHART_PATH="charts/onelensdeployer/Chart.yaml"
           CURRENT_VERSION=$(yq '.version' $CHART_PATH)
 
-          git fetch origin master --depth=1
-          git show origin/master:$CHART_PATH > old_chart.yaml || echo "version: 0.0.0" > old_chart.yaml
+          git show HEAD^:$CHART_PATH > old_chart.yaml || echo "version: 0.0.0" > old_chart.yaml
           PREVIOUS_VERSION=$(yq '.version' old_chart.yaml)
 
           echo "Current: $CURRENT_VERSION, Previous: $PREVIOUS_VERSION"
