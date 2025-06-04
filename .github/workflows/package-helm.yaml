@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - onelens-workflow
+      - master
   workflow_dispatch:
 
 jobs:
