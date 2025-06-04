@@ -132,7 +132,7 @@ jobs:
         run: |
           # Move packaged chart from where it was created to the root of cloned repo
           pwd
-          mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-0.2.3.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
+          mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
 
           echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
