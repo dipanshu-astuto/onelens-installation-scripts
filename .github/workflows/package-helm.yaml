@@ -24,22 +24,66 @@ jobs:
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
+
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.3
 
+      - name: Check for version changes
+        id: version_check
+        run: |
+          CHART_FILE="charts/onelens-agent/Chart.yaml"
+          VERSION_FILE="charts/onelens-agent/version.md"
+          LOCK_FILE="charts/onelens-agent/Chart.lock"
+          
+          # Get the previous commit
+          PREV_COMMIT=$(git rev-parse HEAD^)
+          
+          # Check if any of the files changed
+          CHART_CHANGED=false
+          VERSION_CHANGED=false
+          LOCK_CHANGED=false
+          
+          if ! git diff --quiet "$PREV_COMMIT" -- "$CHART_FILE"; then
+            CHART_CHANGED=true
+            echo "Chart.yaml has changes"
+          fi
+          
+          if ! git diff --quiet "$PREV_COMMIT" -- "$VERSION_FILE"; then
+            VERSION_CHANGED=true
+            echo "version.md has changes"
+          fi
+          
+          if ! git diff --quiet "$PREV_COMMIT" -- "$LOCK_FILE"; then
+            LOCK_CHANGED=true
+            echo "Chart.lock has changes"
+          fi
+          
+          # If no files changed, skip remaining steps
+          if [ "$CHART_CHANGED" = false ] && [ "$VERSION_CHANGED" = false ] && [ "$LOCK_CHANGED" = false ]; then
+            echo "No changes detected in Chart.yaml, version.md, or Chart.lock"
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Changes detected - proceeding with validation and packaging"
+          echo "should_skip=false" >> $GITHUB_OUTPUT
+
+      - name: Early exit if no changes
+        if: steps.version_check.outputs.should_skip == 'true'
+        run: |
+          echo "✅ No version changes detected. Skipping packaging and publishing steps."
+          exit 0
+
       - name: Check if dependency version changed but chart version not updated
+        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           CHART_FILE="charts/onelens-agent/Chart.yaml"
           
           # Get the previous commit
           PREV_COMMIT=$(git rev-parse HEAD^)
-          # Check if the Chart.yaml file was changed
-          if git diff --quiet "$PREV_COMMIT" -- "$CHART_FILE"; then
-            echo "No changes to $CHART_FILE detected. Skipping version check."
-            exit 0
-          fi
+          
           # Extract current and previous values
           OLD_DEP_VERSIONS=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.dependencies[].version')
           NEW_DEP_VERSIONS=$(cat "$CHART_FILE" | yq '.dependencies[].version')
@@ -47,6 +91,7 @@ jobs:
           NEW_CHART_VERSION=$(cat "$CHART_FILE" | yq '.version')
           OLD_APP_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.appVersion')
           NEW_APP_VERSION=$(cat "$CHART_FILE" | yq '.appVersion')
+          
           if [ "$OLD_DEP_VERSIONS" != "$NEW_DEP_VERSIONS" ]; then
             echo "⚠️ Detected a change in dependency versions."
             if [ "$OLD_CHART_VERSION" = "$NEW_CHART_VERSION" ] || [ "$OLD_APP_VERSION" = "$NEW_APP_VERSION" ]; then
@@ -58,43 +103,29 @@ jobs:
               exit 1
             fi
           fi
-      - name: Check if dependency version changed but chart version not updated
+
+      - name: Check if chart version is documented in version.md
+        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           CHART_FILE="charts/onelens-agent/Chart.yaml"
           VERSION_FILE="charts/onelens-agent/version.md"
           
           PREV_COMMIT=$(git rev-parse HEAD^)
-          if git diff --quiet "$PREV_COMMIT" -- "$CHART_FILE"; then
-            echo "No changes to $CHART_FILE detected. Skipping version check."
-            exit 0
-          fi
-          OLD_DEP_VERSIONS=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.dependencies[].version')
-          NEW_DEP_VERSIONS=$(cat "$CHART_FILE" | yq '.dependencies[].version')
           OLD_CHART_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.version')
           NEW_CHART_VERSION=$(cat "$CHART_FILE" | yq '.version')
-          OLD_APP_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.appVersion')
-          NEW_APP_VERSION=$(cat "$CHART_FILE" | yq '.appVersion')
-          if [ "$OLD_DEP_VERSIONS" != "$NEW_DEP_VERSIONS" ]; then
-            echo "⚠️ Detected a change in dependency versions."
-            if [ "$OLD_CHART_VERSION" = "$NEW_CHART_VERSION" ] || [ "$OLD_APP_VERSION" = "$NEW_APP_VERSION" ]; then
-              echo "❌ Dependency version changed, but version or appVersion not updated."
-              echo "Old Chart version: $OLD_CHART_VERSION"
-              echo "New Chart version: $NEW_CHART_VERSION"
-              echo "Old App version: $OLD_APP_VERSION"
-              echo "New App version: $NEW_APP_VERSION"
-              exit 1
-            fi
-          fi
+          
           if [ "$OLD_CHART_VERSION" != "$NEW_CHART_VERSION" ]; then
             echo "🧐 Chart version changed from $OLD_CHART_VERSION to $NEW_CHART_VERSION"
             if ! grep -q "$NEW_CHART_VERSION" "$VERSION_FILE"; then
               echo "❌ Chart version updated to $NEW_CHART_VERSION, but version.md does not contain it."
               exit 1
             else
-              echo "✅ version.md contains the update Chart version $NEW_CHART_VERSION"
+              echo "✅ version.md contains the updated Chart version $NEW_CHART_VERSION"
             fi
           fi
+
       - name: Check Chart.lock matches Chart.yaml dependencies
+        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           CHART_FILE="charts/onelens-agent/Chart.yaml"
           LOCK_FILE="charts/onelens-agent/Chart.lock"
@@ -134,12 +165,16 @@ jobs:
           fi
 
       - name: All checks passed
-        run: echo "✅ All checks passed. No packaging or publishing steps executed."
+        if: steps.version_check.outputs.should_skip == 'false'
+        run: echo "✅ All checks passed. Proceeding with packaging steps."
+
       - name: Clone onelens-installation-scripts repo
+        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           git clone https://github.com/astuto-ai/onelens-installation-scripts.git
           
       - name: Configure AWS Credentials
+        if: steps.version_check.outputs.should_skip == 'false'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
@@ -147,16 +182,21 @@ jobs:
           role-session-name: GitHubActionsSession
 
       - name: Authenticate Helm with AWS ECR
+        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           aws ecr get-login-password --region ap-south-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.ap-south-1.amazonaws.com
+
       - name: Prepare chart packaging
+        if: steps.version_check.outputs.should_skip == 'false'
         working-directory: charts/onelens-agent
         run: |
           echo "📥 Updating Helm dependencies"
           helm dependency update
           echo "📦 Packaging Helm chart"
           helm package .
+
       - name: Commit and push packaged chart to root
+        if: steps.version_check.outputs.should_skip == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
