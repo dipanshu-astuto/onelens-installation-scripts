@@ -170,8 +170,8 @@ helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts &
 if [ "$TOTAL_PODS" -lt 100 ]; then
     echo "Setting resources for small cluster (<100 pods)"
     # Prometheus resources
-    PROMETHEUS_CPU_REQUEST="115m"
-    PROMETHEUS_MEMORY_REQUEST="1.15Gi"
+    PROMETHEUS_CPU_REQUEST="116m"
+    PROMETHEUS_MEMORY_REQUEST="1.16Gi"
     PROMETHEUS_CPU_LIMIT="288m"
     PROMETHEUS_MEMORY_LIMIT="1.73Gi"
     
