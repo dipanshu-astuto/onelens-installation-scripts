@@ -170,20 +170,20 @@ helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts &
 if [ "$TOTAL_PODS" -lt 100 ]; then
     echo "Setting resources for small cluster (<100 pods)"
     # Prometheus resources
-    PROMETHEUS_CPU_REQUEST="115m"
-    PROMETHEUS_MEMORY_REQUEST="1.15Gi"
+    PROMETHEUS_CPU_REQUEST="116m"
+    PROMETHEUS_MEMORY_REQUEST="1.14Gi"
     PROMETHEUS_CPU_LIMIT="288m"
     PROMETHEUS_MEMORY_LIMIT="1.73Gi"
     
     # OpenCost resources
-    OPENCOST_CPU_REQUEST="17m"
-    OPENCOST_MEMORY_REQUEST="63Mi"
+    OPENCOST_CPU_REQUEST="18m"
+    OPENCOST_MEMORY_REQUEST="64Mi"
     OPENCOST_CPU_LIMIT="35m"
     OPENCOST_MEMORY_LIMIT="92Mi"
     
     # OneLens Agent resources
-    ONELENS_CPU_REQUEST="104m"
-    ONELENS_MEMORY_REQUEST="115Mi"
+    ONELENS_CPU_REQUEST="105m"
+    ONELENS_MEMORY_REQUEST="116Mi"
     ONELENS_CPU_LIMIT="138m"
     ONELENS_MEMORY_LIMIT="150Mi"
     
