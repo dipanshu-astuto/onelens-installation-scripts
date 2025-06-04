@@ -127,6 +127,7 @@ jobs:
           helm dependency update
           echo "📦 Packaging Helm chart"
           helm package .
+          pwd
 
       - name: Commit and push packaged chart to root
         env:
