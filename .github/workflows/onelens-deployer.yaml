@@ -106,6 +106,17 @@ jobs:
           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
           aws-region: ${{ env.REGION }}
           role-session-name: GitHubActionsSession
+      - name: Check if ECR Public repository exists
+        id: check_repo
+        run: |
+          if aws ecr-public describe-repositories --repository-names onelens-deployer --region us-east-1 > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Output repository existence status
+        run: echo "ECR repository exists? ${{ steps.check_repo.outputs.exists }}"
 
       - name: Login to Amazon ECR Public
         uses: aws-actions/amazon-ecr-login@v2
