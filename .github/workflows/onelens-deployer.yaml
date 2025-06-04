@@ -105,6 +105,10 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+      - name: Clone onelens-installation-scripts repo
+        if: steps.version_check.outputs.should_skip == 'false'
+        run: |
+          git clone https://github.com/astuto-ai/onelens-installation-scripts.git
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
