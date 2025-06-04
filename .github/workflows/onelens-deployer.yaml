@@ -132,8 +132,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Move packaged chart from where it was created to the root of cloned repo
+          mv onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz onelens-installation-scripts/
+
           cd onelens-installation-scripts
-          mv charts/onelensdeployer/onelensdeployer-*.tgz .
+
           echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
 
