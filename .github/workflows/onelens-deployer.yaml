@@ -105,10 +105,6 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        
-      - name: Clone Onelens Installation Scripts
-        run: |
-          git clone https://github.com/astuto-ai/onelens-installation-scripts.git
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -136,9 +132,7 @@ jobs:
         run: |
           # Move packaged chart from where it was created to the root of cloned repo
           pwd
-          mv onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz onelens-installation-scripts/
-
-          cd onelens-installation-scripts/
+          mv charts/onelensdeployer/onelensdeployer-*.tgz onelens-installation-scripts/
 
           echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
