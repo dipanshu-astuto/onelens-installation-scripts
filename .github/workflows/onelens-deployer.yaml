@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker_changed: ${{ steps.check_docker.outputs.changed }}
+      chart_changed: ${{ steps.check_chart.outputs.changed }}
       chart_version_changed: ${{ steps.chart_version.outputs.version_changed }}
       new_chart_version: ${{ steps.chart_version.outputs.new_version }}
     steps:
@@ -38,9 +39,28 @@ jobs:
       - name: Check if Dockerfile changed
         id: check_docker
         run: |
-          git fetch origin master --depth=1
-          docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^Dockerfile' || true)
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^Dockerfile' || true)
+          else
+            docker_diff=$(git diff --name-only HEAD | grep '^Dockerfile' || true)
+          fi
+
           if [ -n "$docker_diff" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if chart files changed
+        id: check_chart
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            chart_diff=$(git diff --name-only HEAD^ HEAD | grep '^charts/onelensdeployer/' || true)
+          else
+            chart_diff=$(git diff --name-only HEAD | grep '^charts/onelensdeployer/' || true)
+          fi
+
+          if [ -n "$chart_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -100,9 +120,15 @@ jobs:
 
   package_and_push_helm:
     needs: detect_changes
-    if: needs.detect_changes.outputs.chart_version_changed == 'true'
+    if: needs.detect_changes.outputs.chart_changed == 'true'
     runs-on: ubuntu-latest
     steps:
+      - name: Check Chart Version Again Before Proceeding
+        if: needs.detect_changes.outputs.chart_version_changed != 'true'
+        run: |
+          echo "⚠️ A file under charts/onelensdeployer/ changed, but Chart.yaml version did not change. Skipping Helm packaging."
+          exit 0
+
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -130,8 +156,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Move packaged chart from where it was created to the root of cloned repo
-          pwd
           mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
 
           echo "🗂️ Updating Helm repo index"
@@ -142,5 +166,4 @@ jobs:
 
           git add onelensdeployer-*.tgz index.yaml
           git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
-
           git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
