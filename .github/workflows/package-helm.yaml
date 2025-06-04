@@ -7,7 +7,9 @@ permissions:
 on:
   push:
     branches:
-      - wait
+      - master
+    paths:
+      - charts/onelens-agent/**
   workflow_dispatch:
 
 jobs:
