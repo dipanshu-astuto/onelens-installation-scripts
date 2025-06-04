@@ -156,7 +156,6 @@ jobs:
           helm dependency update
           echo "📦 Packaging Helm chart"
           helm package .
-                
       - name: Commit and push packaged chart to root
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -165,13 +164,14 @@ jobs:
           mv charts/onelens-agent/onelens-agent-*.tgz .
           echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+          
           # Set GitHub Actions bot as the commit author
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          # Pull any remote changes first
-          git pull origin onelens-workflow || echo "Branch doesn't exist remotely yet"
+          
           # Stage and commit the package
           git add onelens-agent-*.tgz index.yaml
           git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
-          # Push the commit to the current branch
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:onelens-workflow
+          
+          # Force push to overwrite any conflicts (use with caution)
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:onelens-workflow
