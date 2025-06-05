@@ -2,18 +2,19 @@ name: Validate New Helm Chart Package
 
 on:
   workflow_run:
-    workflows:
-      - Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart
+    workflows: ["Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart"]
     types:
       - completed
+    branches:
+      - master
 
 jobs:
-  validate-new-helm-package:
+  validate:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Helm
@@ -21,18 +22,19 @@ jobs:
         with:
           version: v3.14.0
 
-      - name: Find latest .tgz file
+      - name: Find newly added .tgz file
         id: find-latest
         run: |
-          TGZ=$(ls -t *.tgz | head -n 1 || true)
-          echo "Latest .tgz file: $TGZ"
-          echo "tgz_file=$TGZ" >> $GITHUB_OUTPUT
+          echo "🔍 Checking for new .tgz files added in last commit..."
+          TGZ_FILE=$(git diff-tree --no-commit-id --name-only -r ${{ github.event.workflow_run.head_sha }} | grep '\.tgz$' | head -n 1 || true)
+          
+          if [ -z "$TGZ_FILE" ]; then
+            echo "No .tgz file found in commit!"
+            exit 1
+          fi
 
-      - name: Fail if no .tgz file found
-        if: steps.find-latest.outputs.tgz_file == ''
-        run: |
-          echo "❌ No .tgz file found in repository."
-          exit 1
+          echo "✅ Found TGZ file: $TGZ_FILE"
+          echo "tgz_file=$TGZ_FILE" >> $GITHUB_OUTPUT
 
       - name: Extract and validate Helm chart
         run: |
@@ -42,8 +44,11 @@ jobs:
           mkdir -p extracted
           tar -xzf "$TGZ_FILE" -C extracted
 
-          CHART_DIR=$(basename "$TGZ_FILE" .tgz)
+          # Auto-detect the directory inside the .tgz
+          CHART_DIR=$(ls extracted | head -n 1)
           FULL_PATH="extracted/$CHART_DIR"
+
+          echo "📁 Found chart at $FULL_PATH"
 
           echo "🔍 Linting $FULL_PATH"
           helm lint "$FULL_PATH"
