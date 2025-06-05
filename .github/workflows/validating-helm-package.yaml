@@ -1,0 +1,60 @@
+name: Validate Published Helm Charts
+
+on:
+  workflow_run:
+    workflows: 
+      - Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart
+      - Package Onelens-Agent Helm Chart
+    types:
+      - completed
+    branches:
+      - master
+
+jobs:
+  validate_helm_chart:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.3
+
+      - name: Wait for GitHub Pages sync
+        run: sleep 15  # Optional buffer for GH Pages update
+
+      - name: Add Helm Repo
+        run: |
+          helm repo add astuto https://astuto-ai.github.io/onelens-installation-scripts/
+          helm repo update
+
+      - name: Validate onelensdeployer Chart (if present)
+        run: |
+          set -e
+          CHART_NAME="onelensdeployer"
+          if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
+            VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
+            echo "📦 Validating $CHART_NAME version: $VERSION"
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar
+            helm lint $CHART_NAME
+            helm template test-$CHART_NAME $CHART_NAME
+            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug
+          else
+            echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
+          fi
+
+      - name: Validate onelens-agent Chart (if present)
+        run: |
+          set -e
+          CHART_NAME="onelens-agent"
+          if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
+            VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
+            echo "📦 Validating $CHART_NAME version: $VERSION"
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar
+            helm lint $CHART_NAME
+            helm template test-$CHART_NAME $CHART_NAME
+            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug
+          else
+            echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
+          fi
