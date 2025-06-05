@@ -1,11 +1,11 @@
 name: Validate New Helm Chart Package
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - '**.tgz'
+  workflow_run:
+    workflows:
+      - Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart
+    types:
+      - completed
 
 jobs:
   validate-new-helm-package:
