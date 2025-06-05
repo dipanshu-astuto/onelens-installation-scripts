@@ -101,7 +101,7 @@ jobs:
 
   build_and_push_docker:
     needs: detect_changes
-    if: needs.detect_changes.outputs.docker_changed == 'true' && needs.detect_changes.outputs.entrypoint_changed == 'true'
+    if: needs.detect_changes.outputs.docker_changed == 'true' || needs.detect_changes.outputs.entrypoint_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
