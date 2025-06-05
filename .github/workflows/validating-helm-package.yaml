@@ -42,8 +42,8 @@ jobs:
       - name: Validate onelens-agent Chart (if present)
         run: |
           CHART_NAME="onelens-agent"
-          if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
-            VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
+          if helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -e '.[0]' >/dev/null; then
+            VERSION=$(helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -r '.[0].version')
             echo "📦 Validating $CHART_NAME version: $VERSION"
             
             # Remove existing directory if it exists to avoid untar conflict
