@@ -12,7 +12,7 @@ name: onelensdeployer
 sources:
 - https://github.com/your-repo/job-cronjob-chart
 type: application
-version: 0.2.4
+version: 0.2.7
 
 
 #RELEASE-NOTE
