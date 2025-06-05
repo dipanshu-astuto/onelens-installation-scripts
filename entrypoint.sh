@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check the deployment_type environment 
+# Check the deployment_type environment var
 if [ "$deployment_type" = "job" ]; then
   SCRIPT_NAME="install.sh"
 elif [ "$deployment_type" = "cronjob" ]; then
