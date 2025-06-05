@@ -10,6 +10,7 @@ on:
       - master
     paths:
       - 'Dockerfile'
+      - 'entrypoint.sh'
       - 'charts/onelensdeployer/**'
   workflow_dispatch:
 
@@ -19,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       docker_changed: ${{ steps.check_docker.outputs.changed }}
+      entrypoint_changed: ${{ steps.check_entrypoint.outputs.changed }}
       chart_changed: ${{ steps.check_chart.outputs.changed }}
       chart_version_changed: ${{ steps.chart_version.outputs.version_changed }}
       new_chart_version: ${{ steps.chart_version.outputs.new_version }}
@@ -47,6 +49,22 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Check if entrypoint changed
+        id: check_entrypoint
+        run: |
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^entrypoint.sh' || true)
+          else
+            docker_diff=$(git diff --name-only HEAD | grep '^entrypoint.sh' || true)
+          fi
+
+          if [ -n "$entrypoint_diff" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+
+
 
       - name: Check if chart files changed
         id: check_chart
@@ -82,7 +100,7 @@ jobs:
 
   build_and_push_docker:
     needs: detect_changes
-    if: needs.detect_changes.outputs.docker_changed == 'true'
+    if: needs.detect_changes.outputs.docker_changed == 'true' && needs.detect_changes.outputs.entrypoint_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
