@@ -20,7 +20,7 @@ jobs:
           version: v3.13.3
 
       - name: Wait for GitHub Pages sync
-        run: sleep 15  # Optional buffer for GH Pages update
+        run: sleep 40  # Optional buffer for GH Pages update
 
       - name: Add Helm Repo
         run: |
