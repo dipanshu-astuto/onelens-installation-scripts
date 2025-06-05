@@ -1,0 +1,58 @@
+name: Validate New Helm Chart Package
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.tgz'
+
+jobs:
+  validate-new-helm-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.14.0
+
+      - name: Find new .tgz files
+        id: find-tgz
+        run: |
+          echo " Searching for new .tgz files in this commit..."
+          NEW_TGZ=$(git diff --name-only HEAD^ HEAD | grep '\.tgz$' || true)
+          echo "tgz_files=$NEW_TGZ" >> $GITHUB_OUTPUT
+
+      - name: Fail if no new .tgz files
+        if: steps.find-tgz.outputs.tgz_files == ''
+        run: |
+          echo " No new .tgz files found in this commit."
+          exit 1
+
+      - name: Extract and validate new Helm charts
+        if: steps.find-tgz.outputs.tgz_files != ''
+        run: |
+          echo " Found new .tgz files:"
+          echo "${{ steps.find-tgz.outputs.tgz_files }}"
+
+          for tgz in ${{ steps.find-tgz.outputs.tgz_files }}; do
+            echo " Validating chart: $tgz"
+            mkdir -p extracted
+            tar -xzf "$tgz" -C extracted
+
+            CHART_DIR=$(basename "$tgz" .tgz)
+            FULL_PATH="extracted/$CHART_DIR"
+
+            echo " Linting $FULL_PATH"
+            helm lint "$FULL_PATH"
+
+            echo " Rendering $FULL_PATH"
+            helm template test-render "$FULL_PATH"
+
+            echo " Installing $FULL_PATH with --dry-run"
+            helm install test-release "$FULL_PATH" --dry-run --debug
+          done
