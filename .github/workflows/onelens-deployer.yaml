@@ -54,9 +54,9 @@ jobs:
         id: check_entrypoint
         run: |
           if git rev-parse HEAD^ >/dev/null 2>&1; then
-            docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^entrypoint.sh' || true)
+            entrypoint_diff=$(git diff --name-only HEAD^ HEAD | grep '^entrypoint.sh' || true)
           else
-            docker_diff=$(git diff --name-only HEAD | grep '^entrypoint.sh' || true)
+            entrypoint_diff=$(git diff --name-only HEAD | grep '^entrypoint.sh' || true)
           fi
 
           if [ -n "$entrypoint_diff" ]; then
