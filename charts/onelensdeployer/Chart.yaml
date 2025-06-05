@@ -15,6 +15,6 @@ type: application
 version: 0.2.4
 
 
-#RELEASE-NOTES
+#RELEASE-NOTE
 #0.1.0 - Very stable version
 #0.2.0 - Changes the name of the cronjob
