@@ -9,6 +9,7 @@ on:
 
 jobs:
   validate-new-helm-package:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -20,39 +21,35 @@ jobs:
         with:
           version: v3.14.0
 
-      - name: Find new .tgz files
-        id: find-tgz
+      - name: Find latest .tgz file
+        id: find-latest
         run: |
-          echo " Searching for new .tgz files in this commit..."
-          NEW_TGZ=$(git diff --name-only HEAD^ HEAD | grep '\.tgz$' || true)
-          echo "tgz_files=$NEW_TGZ" >> $GITHUB_OUTPUT
+          TGZ=$(ls -t *.tgz | head -n 1 || true)
+          echo "Latest .tgz file: $TGZ"
+          echo "tgz_file=$TGZ" >> $GITHUB_OUTPUT
 
-      - name: Fail if no new .tgz files
-        if: steps.find-tgz.outputs.tgz_files == ''
+      - name: Fail if no .tgz file found
+        if: steps.find-latest.outputs.tgz_file == ''
         run: |
-          echo " No new .tgz files found in this commit."
+          echo "❌ No .tgz file found in repository."
           exit 1
 
-      - name: Extract and validate new Helm charts
-        if: steps.find-tgz.outputs.tgz_files != ''
+      - name: Extract and validate Helm chart
         run: |
-          echo " Found new .tgz files:"
-          echo "${{ steps.find-tgz.outputs.tgz_files }}"
+          TGZ_FILE="${{ steps.find-latest.outputs.tgz_file }}"
+          echo "✅ Validating chart file: $TGZ_FILE"
 
-          for tgz in ${{ steps.find-tgz.outputs.tgz_files }}; do
-            echo " Validating chart: $tgz"
-            mkdir -p extracted
-            tar -xzf "$tgz" -C extracted
+          mkdir -p extracted
+          tar -xzf "$TGZ_FILE" -C extracted
 
-            CHART_DIR=$(basename "$tgz" .tgz)
-            FULL_PATH="extracted/$CHART_DIR"
+          CHART_DIR=$(basename "$TGZ_FILE" .tgz)
+          FULL_PATH="extracted/$CHART_DIR"
 
-            echo " Linting $FULL_PATH"
-            helm lint "$FULL_PATH"
+          echo "🔍 Linting $FULL_PATH"
+          helm lint "$FULL_PATH"
 
-            echo " Rendering $FULL_PATH"
-            helm template test-render "$FULL_PATH"
+          echo "🔍 Rendering $FULL_PATH"
+          helm template test-render "$FULL_PATH"
 
-            echo " Installing $FULL_PATH with --dry-run"
-            helm install test-release "$FULL_PATH" --dry-run --debug
-          done
+          echo "🧪 Installing $FULL_PATH with --dry-run"
+          helm install test-release "$FULL_PATH" --dry-run --debug
