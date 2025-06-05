@@ -6,7 +6,7 @@ job:
   restartPolicy: Never
   env: 
     deployment_type: job
-  # Tolerations allow the agent to be scheduled on nodes with matching taints
+  # Tolerations allow the agent to be scheduled on nodes with matching 
   tolerations: []
   # - key: "key"
   #   operator: "Equal"
