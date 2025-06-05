@@ -170,10 +170,7 @@ jobs:
         if: steps.version_check.outputs.should_skip == 'false'
         run: echo "✅ All checks passed. Proceeding with packaging steps."
 
-      - name: Clone onelens-installation-scripts repo
-        if: steps.version_check.outputs.should_skip == 'false'
-        run: |
-          git clone https://github.com/astuto-ai/onelens-installation-scripts.git
+
           
       - name: Configure AWS Credentials
         if: steps.version_check.outputs.should_skip == 'false'
@@ -216,4 +213,4 @@ jobs:
           git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
           
           # Force push to overwrite any conflicts (use with caution)
-          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:onelens-workflow
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
