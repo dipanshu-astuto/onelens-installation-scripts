@@ -3,7 +3,7 @@ entries:
   onelens-agent:
   - apiVersion: v2
     appVersion: 0.1.1-beta.4
-    created: "2025-06-05T10:05:35.116058829Z"
+    created: "2025-06-05T12:26:03.322105598Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -30,7 +30,7 @@ entries:
     version: 0.1.1-beta.4
   - apiVersion: v2
     appVersion: 0.1.1-beta.3
-    created: "2025-06-05T10:05:35.106405236Z"
+    created: "2025-06-05T12:26:03.313012213Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -57,7 +57,26 @@ entries:
     version: 0.1.1-beta.3
   onelensdeployer:
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.119753266Z"
+    created: "2025-06-05T12:26:03.327327592Z"
+    description: A Helm chart for deploying Kubernetes Jobs and CronJobs
+    digest: 7881d4900a16daa22b9aa2cbac2b1353b28fad9fb701b9b4826c0fefca89a7a3
+    keywords:
+    - job
+    - cronjob
+    - kubernetes
+    - helm
+    maintainers:
+    - email: your.email@example.com
+      name: Your Name
+    name: onelensdeployer
+    sources:
+    - https://github.com/your-repo/job-cronjob-chart
+    type: application
+    urls:
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.9.tgz
+    version: 0.2.9
+  - apiVersion: v2
+    created: "2025-06-05T12:26:03.326844213Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 6de9d2f4a281be4454ef3f6036ec5ec970e773f59ea193c304155c67745ee683
     keywords:
@@ -76,7 +95,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.8.tgz
     version: 0.2.8
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.119295197Z"
+    created: "2025-06-05T12:26:03.326367355Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: f928987a40a634d614f0fc3ae93baf3a8a0aff56fa5850e68fa364d974e7376c
     keywords:
@@ -95,7 +114,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.7.tgz
     version: 0.2.7
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.118828021Z"
+    created: "2025-06-05T12:26:03.32583825Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 3188fecf697a1e5c825026604b6d68fa6908655716f646a720ede7fcd28dbaa1
     keywords:
@@ -114,7 +133,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.6.tgz
     version: 0.2.6
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.118376194Z"
+    created: "2025-06-05T12:26:03.324897475Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 83c61908d7b270fd34e3ed0616798f61f8d8efec9faa2cda37b3c43705efe92e
     keywords:
@@ -133,7 +152,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.5.tgz
     version: 0.2.5
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.117907836Z"
+    created: "2025-06-05T12:26:03.323962504Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 3626e9b9087a49481736227f127084fe5cdae74087f69dd8e276bf6cd9000e7c
     keywords:
@@ -152,7 +171,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.4.tgz
     version: 0.2.4
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.117449426Z"
+    created: "2025-06-05T12:26:03.32349852Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: aa611b04cd126ded916f3a98f7ae611ea20bc8e91952d0bc4bf0a6a64085950c
     keywords:
@@ -171,7 +190,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.3.tgz
     version: 0.2.3
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.11697114Z"
+    created: "2025-06-05T12:26:03.323014319Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 85339610565298e4428ed5a7fb329f2b972bf145e266f676f2e6e0d3780ca0e7
     keywords:
@@ -190,7 +209,7 @@ entries:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v2
-    created: "2025-06-05T10:05:35.116505907Z"
+    created: "2025-06-05T12:26:03.322550015Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 2da05ff3f2c0c3f14e2d6447d6b5c5ef1c765194a460053b9b1f6846c2124199
     keywords:
@@ -208,4 +227,4 @@ entries:
     urls:
     - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.1.0.tgz
     version: 0.1.0
-generated: "2025-06-05T10:05:35.096495269Z"
+generated: "2025-06-05T12:26:03.303404256Z"
