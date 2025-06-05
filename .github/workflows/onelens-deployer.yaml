@@ -164,7 +164,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
-          aws-region: ${{ env.REGION }}
+          aws-region: us-east-1
           role-session-name: GitHubActionsSession
 
       - name: Authenticate Helm with AWS ECR
