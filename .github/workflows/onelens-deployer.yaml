@@ -146,15 +146,20 @@ jobs:
     if: needs.detect_changes.outputs.chart_changed == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Check Chart Version Again Before Proceeding
-        if: needs.detect_changes.outputs.chart_version_changed != 'true'
-        run: |
-          echo "⚠️ A file under charts/onelensdeployer/ changed, but Chart.yaml version did not change. Skipping Helm packaging."
-          exit 0
+
 
       - name: Checkout repo
         uses: actions/checkout@v3
-
+        
+      - name: Check Chart.yaml version update
+        run: |
+          if [ "${{ needs.detect_changes.outputs.chart_version_changed }}" != "true" ]; then
+            echo "⚠️ Changes detected in chart/onelensdeployer but Chart.yaml version was NOT updated."
+            exit 1   # Fail job, or use exit 0 if you want to just warn and skip
+          else
+            echo "✅ Chart.yaml version updated, proceeding."
+          fi
+          
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
