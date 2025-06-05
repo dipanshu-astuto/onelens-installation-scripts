@@ -10,3 +10,4 @@
 | 0.1.1-beta.3 | Use the custom prometheus scrape config |0.1.1-beta.3 | 
 | 0.1.1-beta.4 | Support for imagePullSecrets | 0.1.1-beta.4 |
 | 0.1.1-beta.5 | Support for imagePullSecrets | 0.1.1-beta.5 | 
+| 0.1.1-beta.6 | Support for imagePullSecrets | 0.1.1-beta.6 |
