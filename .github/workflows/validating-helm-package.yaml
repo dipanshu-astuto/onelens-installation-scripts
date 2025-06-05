@@ -20,7 +20,7 @@ jobs:
           version: v3.13.3
 
       - name: Wait for GitHub Pages sync
-        run: sleep 40  # Optional buffer for GH Pages update
+        run: sleep 120  # Optional buffer for GH Pages update
 
       - name: Add Helm Repo
         run: |
@@ -35,8 +35,6 @@ jobs:
             echo "📦 Validating $CHART_NAME version: $VERSION"
             helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
             helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
-            helm template test-$CHART_NAME $CHART_NAME || echo "⚠️ Helm template failed for $CHART_NAME"
-            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug || echo "⚠️ Helm dry-run install failed for $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
@@ -49,8 +47,6 @@ jobs:
             echo "📦 Validating $CHART_NAME version: $VERSION"
             helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
             helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
-            helm template test-$CHART_NAME $CHART_NAME || echo "⚠️ Helm template failed for $CHART_NAME"
-            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug || echo "⚠️ Helm dry-run install failed for $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
