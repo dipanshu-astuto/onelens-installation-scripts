@@ -45,8 +45,13 @@ jobs:
           if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
             echo "📦 Validating $CHART_NAME version: $VERSION"
+            
+            # Remove existing directory if it exists to avoid untar conflict
+            [ -d "$CHART_NAME" ] && rm -rf "$CHART_NAME"
+            
             helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
-            helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
+            helm lint "$CHART_NAME" || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
+
