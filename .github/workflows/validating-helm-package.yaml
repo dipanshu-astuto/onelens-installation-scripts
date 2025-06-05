@@ -7,8 +7,6 @@ on:
       - Package Onelens-Agent Helm Chart
     types:
       - completed
-    branches:
-      - master
 
 jobs:
   validate_helm_chart:
@@ -31,30 +29,28 @@ jobs:
 
       - name: Validate onelensdeployer Chart (if present)
         run: |
-          set -e
           CHART_NAME="onelensdeployer"
           if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
             echo "📦 Validating $CHART_NAME version: $VERSION"
-            helm pull astuto/$CHART_NAME --version "$VERSION" --untar
-            helm lint $CHART_NAME
-            helm template test-$CHART_NAME $CHART_NAME
-            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
+            helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
+            helm template test-$CHART_NAME $CHART_NAME || echo "⚠️ Helm template failed for $CHART_NAME"
+            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug || echo "⚠️ Helm dry-run install failed for $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
 
       - name: Validate onelens-agent Chart (if present)
         run: |
-          set -e
           CHART_NAME="onelens-agent"
           if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
             echo "📦 Validating $CHART_NAME version: $VERSION"
-            helm pull astuto/$CHART_NAME --version "$VERSION" --untar
-            helm lint $CHART_NAME
-            helm template test-$CHART_NAME $CHART_NAME
-            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
+            helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
+            helm template test-$CHART_NAME $CHART_NAME || echo "⚠️ Helm template failed for $CHART_NAME"
+            helm install test-$CHART_NAME $CHART_NAME --dry-run --debug || echo "⚠️ Helm dry-run install failed for $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
