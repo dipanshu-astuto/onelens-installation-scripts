@@ -1,4 +1,4 @@
-name: Validate Published Helm Charts
+name: Validate Published Helm Charts and Scan Docker Image
 
 on:
   workflow_run:
@@ -7,8 +7,9 @@ on:
       - Package Onelens-Agent Helm Chart
     types:
       - completed
+
   workflow_dispatch:
-  
+
 jobs:
   validate_helm_chart:
     if: github.event.workflow_run.conclusion == 'success'
@@ -46,13 +47,64 @@ jobs:
           if helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -r '.[0].version')
             echo "📦 Validating $CHART_NAME version: $VERSION"
-            
-            # Remove existing directory if it exists to avoid untar conflict
             [ -d "$CHART_NAME" ] && rm -rf "$CHART_NAME"
-            
             helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
             helm lint "$CHART_NAME" || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
           else
             echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
           fi
 
+  trivy_scan:
+    name: Trivy Scan on Docker Image
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download docker build artifact (if present)
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-build-success
+        continue-on-error: true
+
+      - name: Check for docker build marker
+        id: check
+        run: |
+          if [ -f "docker-build-success.txt" ]; then
+            echo "Docker build marker found. Proceeding with scan."
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          else
+            echo "No docker build marker found. Skipping scan."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if docker image was not pushed
+        if: steps.check.outputs.proceed != 'true'
+        run: |
+          echo " Skipping Trivy scan: No new Docker image built in previous workflow."
+          exit 0
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+          aws-region: us-east-1
+          role-session-name: GitHubActionsSession
+
+      - name: Login to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Run Trivy Scan on Docker Image
+        run: |
+          IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
+          echo "🔍 Scanning image $IMAGE with Trivy"
+          trivy image --severity CRITICAL,HIGH --no-progress $IMAGE
