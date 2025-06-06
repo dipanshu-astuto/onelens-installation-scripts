@@ -58,19 +58,23 @@ jobs:
           exit 0
           
       - name: Set up Helm
+        if: steps.check_version.outputs.proceed == 'true'
         uses: azure/setup-helm@v3
         with:
           version: v3.13.3
 
       - name: Wait for GitHub Pages sync
+        if: steps.check_version.outputs.proceed == 'true'
         run: sleep 120  # Optional buffer for GH Pages update
 
       - name: Add Helm Repo
+        if: steps.check_version.outputs.proceed == 'true'
         run: |
           helm repo add astuto https://astuto-ai.github.io/onelens-installation-scripts/
           helm repo update
 
       - name: Validate onelensdeployer Chart (if present)
+        if: steps.check_version.outputs.proceed == 'true'
         run: |
           CHART_NAME="onelensdeployer"
           if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
@@ -83,6 +87,7 @@ jobs:
           fi
 
       - name: Validate onelens-agent Chart (if present)
+        if: steps.check_version.outputs.proceed == 'true'
         run: |
           CHART_NAME="onelens-agent"
           if helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -e '.[0]' >/dev/null; then
