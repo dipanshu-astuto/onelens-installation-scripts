@@ -139,15 +139,6 @@ jobs:
           tags: public.ecr.aws/w7k6q5m9/onelens-deployer:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          
-      - name: Mark Docker Build Success
-        run: echo "success" > docker-build-success.txt
-      
-      - name: Upload Docker Build Marker
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-build-success-${{ github.run_id }}
-          path: docker-build-success.txt
 
 
   package_and_push_helm:
