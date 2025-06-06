@@ -75,7 +75,7 @@ jobs:
       - name: Early exit if no changes
         if: steps.version_check.outputs.should_skip == 'true'
         run: |
-          echo "✅ No version changes detected. Skipping packaging and publishing steps."
+          echo " No version changes detected. Skipping packaging and publishing steps."
           exit 0
 
       - name: Check if dependency version changed but chart version not updated
@@ -95,9 +95,9 @@ jobs:
           NEW_APP_VERSION=$(cat "$CHART_FILE" | yq '.appVersion')
           
           if [ "$OLD_DEP_VERSIONS" != "$NEW_DEP_VERSIONS" ]; then
-            echo "⚠️ Detected a change in dependency versions."
+            echo " Detected a change in dependency versions."
             if [ "$OLD_CHART_VERSION" = "$NEW_CHART_VERSION" ] || [ "$OLD_APP_VERSION" = "$NEW_APP_VERSION" ]; then
-              echo "❌ Dependency version changed, but version or appVersion not updated."
+              echo " Dependency version changed, but version or appVersion not updated."
               echo "Old Chart version: $OLD_CHART_VERSION"
               echo "New Chart version: $NEW_CHART_VERSION"
               echo "Old App version: $OLD_APP_VERSION"
@@ -117,12 +117,12 @@ jobs:
           NEW_CHART_VERSION=$(cat "$CHART_FILE" | yq '.version')
           
           if [ "$OLD_CHART_VERSION" != "$NEW_CHART_VERSION" ]; then
-            echo "🧐 Chart version changed from $OLD_CHART_VERSION to $NEW_CHART_VERSION"
+            echo " Chart version changed from $OLD_CHART_VERSION to $NEW_CHART_VERSION"
             if ! grep -q "$NEW_CHART_VERSION" "$VERSION_FILE"; then
-              echo "❌ Chart version updated to $NEW_CHART_VERSION, but version.md does not contain it."
+              echo " Chart version updated to $NEW_CHART_VERSION, but version.md does not contain it."
               exit 1
             else
-              echo "✅ version.md contains the updated Chart version $NEW_CHART_VERSION"
+              echo " version.md contains the updated Chart version $NEW_CHART_VERSION"
             fi
           fi
 
@@ -132,11 +132,11 @@ jobs:
           CHART_FILE="charts/onelens-agent/Chart.yaml"
           LOCK_FILE="charts/onelens-agent/Chart.lock"
       
-          echo "📦 Chart.yaml Dependencies:"
+          echo " Chart.yaml Dependencies:"
           yq e -o=json "$CHART_FILE" | jq -r '.dependencies[] | "\(.name): \(.version)"' | sort > chart_yaml_deps.txt
           cat chart_yaml_deps.txt
 
-          echo "🔒 Chart.lock Dependencies:"
+          echo " Chart.lock Dependencies:"
           yq e -o=json "$LOCK_FILE" | jq -r '.dependencies[] | "\(.name): \(.version)"' | sort > chart_lock_deps.txt
           cat chart_lock_deps.txt
 
@@ -153,22 +153,22 @@ jobs:
             fi
 
             if [ "$VERSION_YAML" != "$VERSION_LOCK" ]; then
-              echo "❌ Version mismatch for dependency '$NAME': Chart.yaml has '$VERSION_YAML', Chart.lock has '$VERSION_LOCK'"
+              echo " Version mismatch for dependency '$NAME': Chart.yaml has '$VERSION_YAML', Chart.lock has '$VERSION_LOCK'"
               MISMATCH=1
             fi
           done < chart_yaml_deps.txt
 
           if [ "$MISMATCH" -eq 1 ]; then
             echo ""
-            echo "💡 Run: helm dependency update charts/onelens-agent"
+            echo " Run: helm dependency update charts/onelens-agent"
             exit 1
           else
-            echo "✅ All dependency versions match between Chart.yaml and Chart.lock"
+            echo " All dependency versions match between Chart.yaml and Chart.lock"
           fi
 
       - name: All checks passed
         if: steps.version_check.outputs.should_skip == 'false'
-        run: echo "✅ All checks passed. Proceeding with packaging steps."
+        run: echo " All checks passed. Proceeding with packaging steps."
 
 
           
@@ -189,9 +189,9 @@ jobs:
         if: steps.version_check.outputs.should_skip == 'false'
         working-directory: charts/onelens-agent
         run: |
-          echo "📥 Updating Helm dependencies"
+          echo " Updating Helm dependencies"
           helm dependency update
-          echo "📦 Packaging Helm chart"
+          echo " Packaging Helm chart"
           helm package .
 
       - name: Commit and push packaged chart to root
@@ -201,7 +201,7 @@ jobs:
         run: |
           # Move the .tgz Helm package to the repo root
           mv charts/onelens-agent/onelens-agent-*.tgz .
-          echo "🗂️ Updating Helm repo index"
+          echo " Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
           
           # Set GitHub Actions bot as the commit author
@@ -214,3 +214,17 @@ jobs:
           
           # Force push to overwrite any conflicts (use with caution)
           git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+
+      - name: Extract packaged Helm chart version
+        run: |
+          VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+          echo "$VERSION" > helm-package-version.txt
+          echo "Packaged Helm chart version: $VERSION"
+
+      - name: Upload Helm package version artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: helm-package-version
+          path: helm-package-version.txt
+  
+
