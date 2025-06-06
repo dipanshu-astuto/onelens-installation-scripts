@@ -16,6 +16,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Download Helm package version artifact from previous workflow
+        uses: actions/download-artifact@v3
+        with:
+          name: helm-package-version
+        continue-on-error: true  # In case artifact not present
+
+      - name: Check if new Helm package version exists
+        id: check_version
+        run: |
+          if [ ! -f "helm-package-version.txt" ]; then
+            echo "No helm-package-version artifact found, proceeding with validation."
+            echo "proceed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          NEW_VERSION=$(cat helm-package-version.txt)
+          echo "Downloaded Helm package version: $NEW_VERSION"
+
+          # Check if last validated version file exists in repo or workspace
+          if [ -f "last_validated_version.txt" ]; then
+            LAST_VERSION=$(cat last_validated_version.txt)
+            echo "Last validated Helm package version: $LAST_VERSION"
+          else
+            echo "No last validated version record found."
+            LAST_VERSION=""
+          fi
+
+          if [ "$NEW_VERSION" = "$LAST_VERSION" ]; then
+            echo "Helm package version unchanged. Skipping validation."
+            echo "proceed=false" >> $GITHUB_OUTPUT
+          else
+            echo "New Helm package version detected. Proceeding with validation."
+            echo "$NEW_VERSION" > last_validated_version.txt
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Exit if no new package
+        if: steps.check_version.outputs.proceed != 'true'
+        run: |
+          echo "No new Helm package to validate. Exiting."
+          exit 0
+          
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
@@ -34,11 +76,11 @@ jobs:
           CHART_NAME="onelensdeployer"
           if helm search repo astuto/$CHART_NAME --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --versions -o json | jq -r '.[0].version')
-            echo "📦 Validating $CHART_NAME version: $VERSION"
-            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
-            helm lint $CHART_NAME || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
+            echo " Validating $CHART_NAME version: $VERSION"
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo " Failed to pull chart."; exit 1; }
+            helm lint $CHART_NAME || echo " Helm lint warnings/errors found in $CHART_NAME"
           else
-            echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
+            echo " $CHART_NAME not found in Helm repo. Skipping."
           fi
 
       - name: Validate onelens-agent Chart (if present)
@@ -46,15 +88,20 @@ jobs:
           CHART_NAME="onelens-agent"
           if helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -e '.[0]' >/dev/null; then
             VERSION=$(helm search repo astuto/$CHART_NAME --devel --versions -o json | jq -r '.[0].version')
-            echo "📦 Validating $CHART_NAME version: $VERSION"
+            echo " Validating $CHART_NAME version: $VERSION"
             [ -d "$CHART_NAME" ] && rm -rf "$CHART_NAME"
-            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo "❌ Failed to pull chart."; exit 1; }
-            helm lint "$CHART_NAME" || echo "⚠️ Helm lint warnings/errors found in $CHART_NAME"
+            helm pull astuto/$CHART_NAME --version "$VERSION" --untar || { echo " Failed to pull chart."; exit 1; }
+            helm lint "$CHART_NAME" || echo " Helm lint warnings/errors found in $CHART_NAME"
           else
-            echo "ℹ️ $CHART_NAME not found in Helm repo. Skipping."
+            echo " $CHART_NAME not found in Helm repo. Skipping."
           fi
 
   trivy_scan:
+  
+    permissions:
+      id-token: write
+      contents: read
+      
     name: Trivy Scan on Docker Image
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
@@ -106,5 +153,5 @@ jobs:
       - name: Run Trivy Scan on Docker Image
         run: |
           IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
-          echo "🔍 Scanning image $IMAGE with Trivy"
+          echo " Scanning image $IMAGE with Trivy"
           trivy image --severity CRITICAL,HIGH --no-progress $IMAGE
