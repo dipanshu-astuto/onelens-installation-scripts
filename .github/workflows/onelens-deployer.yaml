@@ -139,7 +139,17 @@ jobs:
           tags: public.ecr.aws/w7k6q5m9/onelens-deployer:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          
+      - name: Upload Docker build success marker
+        if: success()
+        run: echo "success" > docker-build-success.txt
 
+      - name: Upload artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-build-success
+          path: docker-build-success.txt
 
   package_and_push_helm:
     needs: detect_changes
