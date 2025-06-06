@@ -1,6 +1,6 @@
 # OneLens Agent Helm Chart
 
-This Helm chart provides the configuration for deploying the OneLens Agent in Kubernetes environments. It builds upon the OneLens Agent Base chart and includes additional components like Prometheus and OpenCost.
+This Helm chart provides the configuration for deploying the OneLens Agent in Kubernetes environments. It builds upon  OneLens Agent Base chart and includes additional components like Prometheus and OpenCost.
 
 ## Overview
 
