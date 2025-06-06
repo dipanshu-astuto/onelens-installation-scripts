@@ -222,7 +222,7 @@ jobs:
           echo "Packaged Helm chart version: $VERSION"
 
       - name: Upload Helm package version artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: helm-package-version
           path: helm-package-version.txt
