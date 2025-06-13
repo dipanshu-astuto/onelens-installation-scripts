@@ -85,7 +85,7 @@ cronjob:
       # Read access to nodes
       - apiGroups: [""]
         resources: ["nodes"]
-        verbs: ["list", "watch", "patch", "update"]
+        verbs: ["get","list", "watch", "patch", "update"]
 
       # Read access to persistentvolumes
       - apiGroups: [""]
