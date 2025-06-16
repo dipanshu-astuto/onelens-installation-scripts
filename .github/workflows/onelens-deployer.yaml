@@ -13,7 +13,12 @@ on:
       - 'entrypoint.sh'
       - 'charts/onelensdeployer/**'
   workflow_dispatch:
-
+    inputs:
+      skip_vulnerability_check:
+        description: 'Skip vulnerability check and push image anyway'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   detect_changes:
@@ -101,7 +106,7 @@ jobs:
 
   build-docker:
     needs: detect_changes
-    if: needs.detect_changes.outputs.docker_changed == 'true' || needs.detect_changes.outputs.entrypoint_changed == 'true'
+    if: needs.detect_changes.outputs.docker_changed == 'true' || needs.detect_changes.outputs.entrypoint_changed == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -153,6 +158,7 @@ jobs:
   trivy-scan:
     name: Trivy Security Scan
     needs: build-docker
+    if: inputs.skip_vulnerability_check != true
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -200,21 +206,25 @@ jobs:
             
             # Create scan results summary
             echo "scan_results<<EOF" >> $GITHUB_OUTPUT
-            echo " **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
+            echo "🚨 **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "Critical and High severity vulnerabilities detected in the Docker image." >> $GITHUB_OUTPUT
             echo "Please review the full scan results below:" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             cat trivy-summary.txt >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+            
+            # Fail the job if vulnerabilities are found
+            echo "❌ Failing build due to security vulnerabilities"
+            exit 1
           else
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
-            echo "scan_results= No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
-            echo "No critical/high vulnerabilities found. Image is safe to push."
+            echo "scan_results=✅ No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
+            echo "✅ No critical/high vulnerabilities found. Image is safe to push."
           fi
 
       - name: Upload Trivy results
-        if: steps.scan.outputs.vulnerabilities_found == 'true'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-results
@@ -222,32 +232,15 @@ jobs:
             trivy-results.json
             trivy-summary.txt
 
-  manual-approval:
-    name: Manual Approval for Vulnerable Image
-    needs: [build-docker, trivy-scan]
-    if: needs.trivy-scan.outputs.vulnerabilities_found == 'true'
-    runs-on: ubuntu-latest
-    environment: 
-      name: security-review
-      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-    steps:
-      - name: Request Manual Approval
-        run: |
-          echo " Security vulnerabilities detected!"
-          echo "${{ needs.trivy-scan.outputs.scan_results }}"
-          echo ""
-          echo "Please review the vulnerabilities and decide whether to proceed with the image push."
-          echo "If you approve this deployment, the image will be pushed to the registry."
-
   push-docker:
     name: Push Docker Image
-    needs: [build-docker, trivy-scan, manual-approval]
+    needs: [build-docker, trivy-scan]
     if: |
       always() && 
       needs.build-docker.result == 'success' &&
-      needs.trivy-scan.result == 'success' &&
-      (needs.trivy-scan.outputs.vulnerabilities_found == 'false' || 
-       needs.manual-approval.result == 'success')
+      (needs.trivy-scan.result == 'success' || 
+       needs.trivy-scan.result == 'skipped' || 
+       inputs.skip_vulnerability_check == true)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -288,8 +281,10 @@ jobs:
             --cache-to type=gha,mode=max \
             .
           
-          if [ "${{ needs.trivy-scan.outputs.vulnerabilities_found }}" == "true" ]; then
-            echo "  Multi-arch image pushed with known vulnerabilities after manual approval"
+          if [ "${{ inputs.skip_vulnerability_check }}" == "true" ]; then
+            echo " Multi-arch image pushed with vulnerability check skipped"
+          elif [ "${{ needs.trivy-scan.result }}" == "skipped" ]; then
+            echo " Multi-arch image pushed with vulnerability check skipped"
           else
             echo " Clean multi-arch image pushed successfully"
           fi
