@@ -99,7 +99,7 @@ jobs:
             echo "version_changed=false" >> $GITHUB_OUTPUT
           fi
 
-  build_and_push_docker:
+  build-docker:
     needs: detect_changes
     if: needs.detect_changes.outputs.docker_changed == 'true' || needs.detect_changes.outputs.entrypoint_changed == 'true'
     runs-on: ubuntu-latest
@@ -129,16 +129,163 @@ jobs:
         with:
           registry-type: public
 
-      - name: Build and Push Multi-Arch Docker Image
+      - name: Build Multi-Arch Docker Image (without push)
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: false
           tags: public.ecr.aws/w7k6q5m9/onelens-deployer:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp/image.tar
+
+  trivy_scan:
+    name: Trivy Security Scan
+    needs: build-docker
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      vulnerabilities_found: ${{ steps.scan.outputs.vulnerabilities_found }}
+      scan_results: ${{ steps.scan.outputs.scan_results }}
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image.tar
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Run Trivy Scan on Docker Image
+        id: scan
+        run: |
+          IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
+          echo "Scanning image $IMAGE with Trivy"
+          
+          # Run trivy scan and capture output
+          trivy image --severity CRITICAL,HIGH --no-progress --format json $IMAGE > trivy-results.json
+          
+          # Check if vulnerabilities were found
+          VULN_COUNT=$(cat trivy-results.json | jq '[.Results[]?.Vulnerabilities // []] | add | length')
+          
+          if [ "$VULN_COUNT" -gt 0 ]; then
+            echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+            echo "Found $VULN_COUNT critical/high vulnerabilities"
+            
+            # Generate human-readable summary
+            trivy image --severity CRITICAL,HIGH --no-progress $IMAGE > trivy-summary.txt
+            
+            # Create scan results summary
+            echo "scan_results<<EOF" >> $GITHUB_OUTPUT
+            echo "🚨 **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Critical and High severity vulnerabilities detected in the Docker image." >> $GITHUB_OUTPUT
+            echo "Please review the full scan results below:" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            cat trivy-summary.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+            echo "scan_results=✅ No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
+            echo "No critical/high vulnerabilities found. Image is safe to push."
+          fi
+
+      - name: Upload Trivy results
+        if: steps.scan.outputs.vulnerabilities_found == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-results
+          path: |
+            trivy-results.json
+            trivy-summary.txt
+
+  manual_approval:
+    name: Manual Approval for Vulnerable Image
+    needs: [build-docker, trivy_scan]
+    if: needs.trivy_scan.outputs.vulnerabilities_found == 'true'
+    runs-on: ubuntu-latest
+    environment: 
+      name: security-review
+      url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Request Manual Approval
+        run: |
+          echo "🚨 Security vulnerabilities detected!"
+          echo "${{ needs.trivy_scan.outputs.scan_results }}"
+          echo ""
+          echo "Please review the vulnerabilities and decide whether to proceed with the image push."
+          echo "If you approve this deployment, the image will be pushed to the registry."
+
+  push_docker:
+    name: Push Docker Image
+    needs: [build-docker, trivy_scan, manual_approval]
+    if: |
+      always() && 
+      needs.build-docker.result == 'success' &&
+      needs.trivy_scan.result == 'success' &&
+      (needs.trivy_scan.outputs.vulnerabilities_found == 'false' || 
+       needs.manual_approval.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image.tar
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+          aws-region: us-east-1
+          role-session-name: GitHubActionsSession
+
+      - name: Login to Amazon ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Push Docker Image
+        run: |
+          IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
+          echo "Pushing image: $IMAGE"
+          docker push $IMAGE
+          
+          if [ "${{ needs.trivy_scan.outputs.vulnerabilities_found }}" == "true" ]; then
+            echo "⚠️  Image pushed with known vulnerabilities after manual approval"
+          else
+            echo "✅ Clean image pushed successfully"
+          fi
 
 
   package_and_push_helm:
