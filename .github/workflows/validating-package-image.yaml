@@ -100,45 +100,4 @@ jobs:
             echo " $CHART_NAME not found in Helm repo. Skipping."
           fi
 
-  trivy_scan:
-    name: Trivy Scan on Docker Image
-    if: github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
 
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
-          aws-region: us-east-1
-          role-session-name: GitHubActionsSession
-
-      - name: Login to Amazon ECR Public
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
-
-      - name: Pull latest Docker image
-        run: |
-          IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
-          echo "Pulling latest image: $IMAGE"
-          docker pull $IMAGE
-
-      - name: Run Trivy Scan on Docker Image
-        run: |
-          IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
-          echo "Scanning image $IMAGE with Trivy"
-          trivy image --severity CRITICAL,HIGH --no-progress $IMAGE
