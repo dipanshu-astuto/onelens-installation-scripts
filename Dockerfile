@@ -1,5 +1,4 @@
-FROM alpine:3.12
-
+FROM alpine:3.18
 # Install dependencies
 RUN apk update && apk add --no-cache \
     curl \
