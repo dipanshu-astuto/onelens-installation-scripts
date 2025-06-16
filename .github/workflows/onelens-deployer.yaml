@@ -122,25 +122,27 @@ jobs:
           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
           aws-region: us-east-1
           role-session-name: GitHubActionsSession
-              
 
       - name: Login to Amazon ECR Public
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registry-type: public
 
-      - name: Build Multi-Arch Docker Image (without push)
+      - name: Build Docker Image for Scanning (single platform)
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: false
           tags: public.ecr.aws/w7k6q5m9/onelens-deployer:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          outputs: type=docker,dest=/tmp/image.tar
+          load: true
+
+      - name: Save Docker image
+        run: docker save public.ecr.aws/w7k6q5m9/onelens-deployer:latest -o /tmp/image.tar
 
       - name: Upload image artifact
         uses: actions/upload-artifact@v4
@@ -148,7 +150,7 @@ jobs:
           name: docker-image
           path: /tmp/image.tar
 
-  trivy_scan:
+  trivy-scan:
     name: Trivy Security Scan
     needs: build-docker
     runs-on: ubuntu-latest
@@ -198,7 +200,7 @@ jobs:
             
             # Create scan results summary
             echo "scan_results<<EOF" >> $GITHUB_OUTPUT
-            echo "🚨 **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
+            echo " **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
             echo "" >> $GITHUB_OUTPUT
             echo "Critical and High severity vulnerabilities detected in the Docker image." >> $GITHUB_OUTPUT
             echo "Please review the full scan results below:" >> $GITHUB_OUTPUT
@@ -207,7 +209,7 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
-            echo "scan_results=✅ No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
+            echo "scan_results= No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
             echo "No critical/high vulnerabilities found. Image is safe to push."
           fi
 
@@ -220,10 +222,10 @@ jobs:
             trivy-results.json
             trivy-summary.txt
 
-  manual_approval:
+  manual-approval:
     name: Manual Approval for Vulnerable Image
-    needs: [build-docker, trivy_scan]
-    if: needs.trivy_scan.outputs.vulnerabilities_found == 'true'
+    needs: [build-docker, trivy-scan]
+    if: needs.trivy-scan.outputs.vulnerabilities_found == 'true'
     runs-on: ubuntu-latest
     environment: 
       name: security-review
@@ -231,21 +233,21 @@ jobs:
     steps:
       - name: Request Manual Approval
         run: |
-          echo "🚨 Security vulnerabilities detected!"
-          echo "${{ needs.trivy_scan.outputs.scan_results }}"
+          echo " Security vulnerabilities detected!"
+          echo "${{ needs.trivy-scan.outputs.scan_results }}"
           echo ""
           echo "Please review the vulnerabilities and decide whether to proceed with the image push."
           echo "If you approve this deployment, the image will be pushed to the registry."
 
-  push_docker:
+  push-docker:
     name: Push Docker Image
-    needs: [build-docker, trivy_scan, manual_approval]
+    needs: [build-docker, trivy-scan, manual-approval]
     if: |
       always() && 
       needs.build-docker.result == 'success' &&
-      needs.trivy_scan.result == 'success' &&
-      (needs.trivy_scan.outputs.vulnerabilities_found == 'false' || 
-       needs.manual_approval.result == 'success')
+      needs.trivy-scan.result == 'success' &&
+      (needs.trivy-scan.outputs.vulnerabilities_found == 'false' || 
+       needs.manual-approval.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -254,14 +256,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Load Docker image
-        run: docker load --input /tmp/image.tar
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -275,16 +274,24 @@ jobs:
         with:
           registry-type: public
 
-      - name: Push Docker Image
+      - name: Push Multi-Arch Docker Image
         run: |
           IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
-          echo "Pushing image: $IMAGE"
-          docker push $IMAGE
+          echo "Building and pushing multi-arch image: $IMAGE"
           
-          if [ "${{ needs.trivy_scan.outputs.vulnerabilities_found }}" == "true" ]; then
-            echo "⚠️  Image pushed with known vulnerabilities after manual approval"
+          # Build and push the multi-platform image
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag $IMAGE \
+            --push \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            .
+          
+          if [ "${{ needs.trivy-scan.outputs.vulnerabilities_found }}" == "true" ]; then
+            echo "  Multi-arch image pushed with known vulnerabilities after manual approval"
           else
-            echo "✅ Clean image pushed successfully"
+            echo " Clean multi-arch image pushed successfully"
           fi
 
 
