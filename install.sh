@@ -1,44 +1,4 @@
 #!/bin/bash
-#set -ex
-#trap -p
-
-
-# Phase 1: Logging Setup
-#TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-#LOG_FILE="/tmp/${TIMESTAMP}.log"
-#touch "$LOG_FILE"
-# Capture all script output
-#exec > >(tee "$LOG_FILE") 2>&1
-
-
-#send_logs() {
-#    echo "***********************************************************************************************"
-#    echo "📤 Sending logs to API..."
-#    echo "Log Output:"
-#    echo "-----------------------------------------------------------------------------------------------"
-    
-#    cat "$LOG_FILE"
-
-    #echo "Sending logs to API..."
-    #echo "***********************************************************************************************"
-    #sleep 0.1
-    #cat "$LOG_FILE"
-
-    # Escape double quotes in the log file to ensure valid JSON
-    #logs=$(sed 's/"/\\"/g' "$LOG_FILE")
-
-    #curl -X POST "$API_BASE_URL/v1/kubernetes/registration" \
-    #    -H "Content-Type: application/json" \
-    #    -d "{
-    #        \"registration_id\": \"$registration_id\",
-    #        \"cluster_token\": \"$cluster_token\",
-    #        \"status\": \"FAILED\",
-    #        \"logs\": \"$logs\"
-    #  }"
-#}
-
-# Ensure send_logs runs before exit
-#trap 'send_logs; exit 1' ERR EXIT
 
 # Error log file name with timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -56,14 +16,6 @@ handle_error() {
         echo "--- Output ---"
         cat "$TMP_LOG"
     } > "$ERROR_LOG"
-
-    # Upload error log to S3
-    #if aws s3 cp "$ERROR_LOG" "s3://$BUCKET_NAME/"; then
-    #    echo "Error log uploaded to S3."
-    #    rm -f "$ERROR_LOG" "$TMP_LOG"
-    #else
-    #    echo "Failed to upload error log to S3."
-    #fi
 
     exit $exit_code
 }
@@ -455,3 +407,6 @@ kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
 kubectl delete sa onelensdeployerjob-sa
 
 }> >(tee "$TMP_LOG") 2>&1
+
+echo "--- Full Script Output ---"
+cat "$TMP_LOG"
