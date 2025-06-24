@@ -10,10 +10,12 @@ handle_error() {
     local exit_code=$?
     local failed_command="${BASH_COMMAND}"
 
-    echo "Command failed: $failed_command"
-    echo "Exit code: $exit_code"
-    echo "--- Output (from $TMP_LOG) ---"
-    cat "$TMP_LOG" | tee "$ERROR_LOG"
+      {
+          echo "Command failed: $failed_command"
+          echo "Exit code: $exit_code"
+          echo "--- Output (from $TMP_LOG) ---"
+          cat "$TMP_LOG"
+      } | tee "$ERROR_LOG"
     
 
     exit $exit_code
@@ -405,7 +407,4 @@ kubectl delete clusterrole onelensdeployerjob-clusterrole
 kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
 kubectl delete sa onelensdeployerjob-sa
 
-}> "$TMP_LOG" 2>&1
-
-echo "--- Full Script Output ---"
-cat "$TMP_LOG"
+} >"$TMP_LOG" 2>&1
