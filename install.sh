@@ -38,7 +38,7 @@
 #}
 
 # Ensure send_logs runs before exit
-#trap 'send_logs; exit 1' ERR EXIT
+#trap 'send_logs; handle_error' ERR EXIT
 
 # Set the S3 bucket name
 #BUCKET_NAME="shell-error-logs"  # Replace with your actual bucket
@@ -68,7 +68,7 @@ handle_error() {
     #    echo "Failed to upload error log to S3."
     #fi
 
-    #exit $exit_code
+    exit $exit_code
 }
 
 # Trap any error
@@ -91,7 +91,7 @@ set -o pipefail
     export RELEASE_VERSION IMAGE_TAG API_BASE_URL TOKEN PVC_ENABLED
     if [ -z "${REGISTRATION_TOKEN:-}" ]; then
         echo "Error: REGISTRATION_TOKEN is not set"
-        exit 1
+        handle_error
     else
         echo "REGISTRATION_TOKEN is set"
     fi
@@ -119,7 +119,7 @@ set -o pipefail
         echo "Both REGISTRATION_ID and CLUSTER_TOKEN have values."
     else
         echo "One or both of REGISTRATION_ID and CLUSTER_TOKEN are empty or null."
-        exit 1
+        handle_error
     fi
     sleep 2
     
@@ -139,7 +139,7 @@ set -o pipefail
         ARCH_TYPE="arm64"
     else
         echo "Unsupported architecture: $ARCH"
-        exit 1
+        handle_error
     fi
     
     echo "Detected architecture: $ARCH_TYPE"
@@ -163,7 +163,7 @@ set -o pipefail
     
     if ! command -v kubectl &> /dev/null; then
         echo "Error: kubectl not found. Please install kubectl."
-        exit 1
+        handle_error
     fi
     
     # Phase 7: Namespace Validation
@@ -171,7 +171,7 @@ set -o pipefail
         echo "Warning: Namespace 'onelens-agent' already exists."
     else
         echo "Creating namespace 'onelens-agent'..."
-        kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; exit 1; }
+        kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; handle_error; }
     fi
     
     # Phase 8: EBS CSI Driver Check and Installation
@@ -213,7 +213,7 @@ set -o pipefail
     
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch pod details. Please check if Kubernetes is running and kubectl is configured correctly." >&2
-        exit 1
+        handle_error
     fi
     
     echo "Total number of pods in the cluster: $TOTAL_PODS"
@@ -324,7 +324,7 @@ set -o pipefail
     check_var() {
         if [ -z "${!1:-}" ]; then
             echo "Error: $1 is not set"
-            exit 1
+            handle_error
         fi
     }
     
@@ -341,7 +341,7 @@ set -o pipefail
     #         echo "Patching onelens-agent to version $IMAGE_TAG..."
     #     else
     #         echo "onelens-agent is already at the desired version ($IMAGE_TAG)."
-    #         exit 1
+    #         handle_error
     #     fi
     # else
     #     echo "No existing onelens-agent release found. Proceeding with installation."
@@ -362,7 +362,7 @@ set -o pipefail
     # Use -f to fail silently on server errors and -O to save with original name
     if ! curl -f -O "$URL"; then
       echo "❌ Failed to download $FILE from $URL"
-      exit 1
+      handle_error
     fi
     
     echo "✅ Downloaded $FILE successfully."
@@ -432,7 +432,7 @@ set -o pipefail
     fi
     
     # Final execution
-    CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; exit 1; }"
+    CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; handle_error; }"
     
     # Run it
     eval "$CMD"
