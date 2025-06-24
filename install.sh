@@ -53,6 +53,7 @@ exec > "$TMP_LOG" 2>&1
 handle_error() {
     local exit_code=$?
     echo "❌ An error occurred during script execution. See log at: $TMP_LOG"
+    cat "$TMP_LOG"
     exit $exit_code
 }
 
