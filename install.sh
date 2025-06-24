@@ -10,12 +10,11 @@ handle_error() {
     local exit_code=$?
     local failed_command="${BASH_COMMAND}"
 
-    {
-        echo "Command failed: $failed_command"
-        echo "Exit code: $exit_code"
-        echo "--- Output ---"
-        cat "$TMP_LOG"
-    } > "$ERROR_LOG"
+    echo "Command failed: $failed_command"
+    echo "Exit code: $exit_code"
+    echo "--- Output (from $TMP_LOG) ---"
+    cat "$TMP_LOG" | tee "$ERROR_LOG"
+    
 
     exit $exit_code
 }
