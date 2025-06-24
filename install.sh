@@ -1,6 +1,6 @@
 #!/bin/bash
-set -ex
-trap -p
+set -e
+
 
 # Phase 1: Logging Setup
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
