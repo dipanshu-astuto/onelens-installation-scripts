@@ -407,4 +407,4 @@ kubectl delete clusterrole onelensdeployerjob-clusterrole
 kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
 kubectl delete sa onelensdeployerjob-sa
 
-} >"$TMP_LOG" 2>&1
+} > "$TMP_LOG" 2>&1
