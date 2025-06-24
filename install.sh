@@ -9,13 +9,15 @@ touch "$LOG_FILE"
 # Capture all script output
 exec > >(tee "$LOG_FILE") 2>&1
 
-send_logs() {
-    echo "***********************************************************************************************"
-    echo "📤 Sending logs to API..."
-    echo "Log Output:"
-    echo "-----------------------------------------------------------------------------------------------"
+trap 'echo -e "\n❌ These are errors in the script. See below:\n"; cat "$LOG_FILE"; exit 1' ERR
+
+#send_logs() {
+#    echo "***********************************************************************************************"
+#    echo "📤 Sending logs to API..."
+#    echo "Log Output:"
+#    echo "-----------------------------------------------------------------------------------------------"
     
-    cat "$LOG_FILE"
+#    cat "$LOG_FILE"
 
     #echo "Sending logs to API..."
     #echo "***********************************************************************************************"
@@ -32,8 +34,8 @@ send_logs() {
     #        \"cluster_token\": \"$cluster_token\",
     #        \"status\": \"FAILED\",
     #        \"logs\": \"$logs\"
-        }"
-}
+    #  }"
+#}
 
 # Ensure send_logs runs before exit
 trap 'send_logs; exit 1' ERR EXIT
