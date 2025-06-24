@@ -54,6 +54,9 @@ if [ -z "${REGISTRATION_TOKEN:-}" ]; then
 else
     echo "REGISTRATION_TOKEN is set"
 fi
+echo "CLUSTER_NAME: $CLUSTER_NAME"
+echo "ACCOUNT: $ACCOUNT"
+echo "REGION: $REGION"
 
 # Phase 3: API Registration
 response=$(curl -X POST \
