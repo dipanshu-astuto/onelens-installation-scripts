@@ -38,7 +38,7 @@
 #}
 
 # Ensure send_logs runs before exit
-#trap 'send_logs; exit 1' ERR EXIT
+#trap 'send_logs; handle_error' ERR EXIT
 
 
 set -e
@@ -86,7 +86,7 @@ exec > >(tee "$TMP_LOG") 2>&1
 export RELEASE_VERSION IMAGE_TAG API_BASE_URL TOKEN PVC_ENABLED
 if [ -z "${REGISTRATION_TOKEN:-}" ]; then
     echo "Error: REGISTRATION_TOKEN is not set"
-    exit 1
+    handle_error
 else
     echo "REGISTRATION_TOKEN is set"
 fi
@@ -114,7 +114,7 @@ if [[ -n "$REGISTRATION_ID" && "$REGISTRATION_ID" != "null" && -n "$CLUSTER_TOKE
     echo "Both REGISTRATION_ID and CLUSTER_TOKEN have values."
 else
     echo "One or both of REGISTRATION_ID and CLUSTER_TOKEN are empty or null."
-    exit 1
+    handle_error
 fi
 sleep 2
 
@@ -134,7 +134,7 @@ elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
     ARCH_TYPE="arm64"
 else
     echo "Unsupported architecture: $ARCH"
-    exit 1
+    handle_error
 fi
 
 echo "Detected architecture: $ARCH_TYPE"
@@ -158,7 +158,7 @@ kubectl version --client
 
 if ! command -v kubectl &> /dev/null; then
     echo "Error: kubectl not found. Please install kubectl."
-    exit 1
+    handle_error
 fi
 
 # Phase 7: Namespace Validation
@@ -166,7 +166,7 @@ if kubectl get namespace onelens-agent &> /dev/null; then
     echo "Warning: Namespace 'onelens-agent' already exists."
 else
     echo "Creating namespace 'onelens-agent'..."
-    kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; exit 1; }
+    kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; handle_error; }
 fi
 
 # Phase 8: EBS CSI Driver Check and Installation
@@ -208,7 +208,7 @@ TOTAL_PODS=$(kubectl get pods --all-namespaces --no-headers 2>/dev/null | wc -l)
 
 if [ $? -ne 0 ]; then
     echo "Error: Failed to fetch pod details. Please check if Kubernetes is running and kubectl is configured correctly." >&2
-    exit 1
+    handle_error
 fi
 
 echo "Total number of pods in the cluster: $TOTAL_PODS"
@@ -319,7 +319,7 @@ fi
 check_var() {
     if [ -z "${!1:-}" ]; then
         echo "Error: $1 is not set"
-        exit 1
+        handle_error
     fi
 }
 
@@ -336,7 +336,7 @@ check_var REGISTRATION_ID
 #         echo "Patching onelens-agent to version $IMAGE_TAG..."
 #     else
 #         echo "onelens-agent is already at the desired version ($IMAGE_TAG)."
-#         exit 1
+#         handle_error
 #     fi
 # else
 #     echo "No existing onelens-agent release found. Proceeding with installation."
@@ -357,7 +357,7 @@ echo "Downloading $FILE from $URL..."
 # Use -f to fail silently on server errors and -O to save with original name
 if ! curl -f -O "$URL"; then
   echo "❌ Failed to download $FILE from $URL"
-  exit 1
+  handle_error
 fi
 
 echo "✅ Downloaded $FILE successfully."
@@ -427,7 +427,7 @@ if [[ -n "$IMAGE_PULL_SECRET" ]]; then
 fi
 
 # Final execution
-CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; exit 1; }"
+CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; handle_error; }"
 
 # Run it
 eval "$CMD"
