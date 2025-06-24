@@ -40,28 +40,43 @@
 # Ensure send_logs runs before exit
 #trap 'send_logs; exit 1' ERR EXIT
 
-set -eE -o pipefail
-
-# Error log file
+# Error log file name with timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-TMP_LOG="/tmp/last_full_output_$TIMESTAMP.log"
+ERROR_LOG="error_$TIMESTAMP.log"
+TMP_LOG="/tmp/last_full_output.log"
 
-# Redirect all output to TMP_LOG
-exec > "$TMP_LOG" 2>&1
-
-# Error handler
+# Function to handle errors
 handle_error() {
     local exit_code=$?
-    echo "❌ An error occurred during script execution. See log at: $TMP_LOG"
-    cat "$TMP_LOG"
+    local failed_command="${BASH_COMMAND}"
+
+    {
+        echo "Command failed: $failed_command"
+        echo "Exit code: $exit_code"
+        echo "--- Output ---"
+        cat "$TMP_LOG"
+    } > "$ERROR_LOG"
+
+    # Upload error log to S3
+    #if aws s3 cp "$ERROR_LOG" "s3://$BUCKET_NAME/"; then
+    #    echo "Error log uploaded to S3."
+    #    rm -f "$ERROR_LOG" "$TMP_LOG"
+    #else
+    #    echo "Failed to upload error log to S3."
+    #fi
+
     exit $exit_code
 }
 
-# Trap ERR
+# Trap any error
 trap 'handle_error' ERR
 
 
+# Exit script if any command fails
+set -e
+set -o pipefail
 
+{
 
 # Phase 2: Environment Variable Setup
 : "${RELEASE_VERSION:=0.1.1-beta.4}"
@@ -439,4 +454,4 @@ kubectl delete clusterrole onelensdeployerjob-clusterrole
 kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
 kubectl delete sa onelensdeployerjob-sa
 
-
+}> >(tee "$TMP_LOG") 2>&1
