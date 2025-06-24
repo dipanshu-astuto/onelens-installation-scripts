@@ -446,5 +446,5 @@ set -o pipefail
     kubectl delete clusterrole onelensdeployerjob-clusterrole
     kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
     kubectl delete sa onelensdeployerjob-sa
-} > >(tee "$TMP_LOG") 2>&1
+} >  "$TMP_LOG" 2>&1
 
