@@ -1,15 +1,15 @@
 #!/bin/bash
-set -e
+#set -ex
+#trap -p
 
 
 # Phase 1: Logging Setup
-TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-LOG_FILE="/tmp/${TIMESTAMP}.log"
-touch "$LOG_FILE"
+#TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+#LOG_FILE="/tmp/${TIMESTAMP}.log"
+#touch "$LOG_FILE"
 # Capture all script output
-exec > >(tee "$LOG_FILE") 2>&1
+#exec > >(tee "$LOG_FILE") 2>&1
 
-trap 'echo -e "\n❌ These are errors in the script. See below:\n"; cat "$LOG_FILE"; exit 1' ERR
 
 #send_logs() {
 #    echo "***********************************************************************************************"
@@ -39,6 +39,42 @@ trap 'echo -e "\n❌ These are errors in the script. See below:\n"; cat "$LOG_FI
 
 # Ensure send_logs runs before exit
 #trap 'send_logs; exit 1' ERR EXIT
+
+
+set -e
+set -o pipefail
+
+# Timestamp for logs
+TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+
+# Log files
+TMP_LOG="/tmp/onelens-install-${TIMESTAMP}.log"
+ERROR_LOG="./onelens-error-${TIMESTAMP}.log"
+
+# Function to handle errors
+handle_error() {
+    local exit_code=$?
+    local failed_command="${BASH_COMMAND}"
+
+    {
+        echo "Command failed: $failed_command"
+        echo "Exit code: $exit_code"
+        echo "--- Output ---"
+        cat "$TMP_LOG"
+    } > "$ERROR_LOG"
+
+    echo "❌ Error encountered. Log saved to: $ERROR_LOG"
+
+    exit $exit_code
+}
+
+# Trap any error
+trap 'handle_error' ERR
+
+# Capture output
+exec > >(tee "$TMP_LOG") 2>&1
+
+
 
 # Phase 2: Environment Variable Setup
 : "${RELEASE_VERSION:=0.1.1-beta.4}"
