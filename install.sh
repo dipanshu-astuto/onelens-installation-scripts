@@ -38,7 +38,7 @@ trap 'echo -e "\n❌ These are errors in the script. See below:\n"; cat "$LOG_FI
 #}
 
 # Ensure send_logs runs before exit
-trap 'send_logs; exit 1' ERR EXIT
+#trap 'send_logs; exit 1' ERR EXIT
 
 # Phase 2: Environment Variable Setup
 : "${RELEASE_VERSION:=0.1.1-beta.4}"
