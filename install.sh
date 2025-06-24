@@ -56,10 +56,10 @@ handle_error() {
     {
         echo "Command failed: $failed_command"
         echo "Exit code: $exit_code"
-        echo "--- Output ---"
+        echo "--- Output-in-ERROR_LOG-file ---"
         cat "$TMP_LOG"
     } > "$ERROR_LOG"
-    cat $ERROR_LOG
+    #cat $ERROR_LOG
     # Upload error log to S3
     #if aws s3 cp "$ERROR_LOG" "s3://$BUCKET_NAME/"; then
     #    echo "Error log uploaded to S3."
