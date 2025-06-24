@@ -69,7 +69,8 @@ response=$(curl -X POST \
     \"region\": \"$REGION\",
     \"agent_version\": \"$RELEASE_VERSION\"
   }")
-
+  
+echo "API response: $response"
 REGISTRATION_ID=$(echo $response | jq -r '.data.registration_id')
 CLUSTER_TOKEN=$(echo $response | jq -r '.data.cluster_token')
 
