@@ -38,7 +38,7 @@
 #}
 
 # Ensure send_logs runs before exit
-#trap 'send_logs; handle_error' ERR EXIT
+#trap 'send_logs; exit 1' ERR EXIT
 
 # Set the S3 bucket name
 #BUCKET_NAME="shell-error-logs"  # Replace with your actual bucket
@@ -49,30 +49,17 @@ ERROR_LOG="error_$TIMESTAMP.log"
 TMP_LOG="/tmp/last_full_output.log"
 
 # Function to handle errors
-handle_error() {
+exit 1() {
     local exit_code=$?
-    local failed_command="${BASH_COMMAND}"
-
-    {
-        echo "Command failed: $failed_command"
-        echo "Exit code: $exit_code"
-        echo "--- Output-in-ERROR_LOG-file ---"
-        cat "$TMP_LOG"
-    } > "$ERROR_LOG"
-    #cat $ERROR_LOG
-    # Upload error log to S3
-    #if aws s3 cp "$ERROR_LOG" "s3://$BUCKET_NAME/"; then
-    #    echo "Error log uploaded to S3."
-    #    rm -f "$ERROR_LOG" "$TMP_LOG"
-    #else
-    #    echo "Failed to upload error log to S3."
-    #fi
-
-    exit $exit_code
+    if [ "$exit_code" -ne 0 ]; then
+        cp "$TMP_LOG" "$ERROR_LOG"
+        #cat "$ERROR_LOG"
+    fi
 }
+trap exit 1 EXIT
 
 # Trap any error
-trap 'handle_error' ERR
+trap 'exit 1' ERR EXIT
 
 # Exit script if any command fails
 set -e
@@ -91,7 +78,7 @@ set -o pipefail
     export RELEASE_VERSION IMAGE_TAG API_BASE_URL TOKEN PVC_ENABLED
     if [ -z "${REGISTRATION_TOKEN:-}" ]; then
         echo "Error: REGISTRATION_TOKEN is not set"
-        handle_error
+        exit 1
     else
         echo "REGISTRATION_TOKEN is set"
     fi
@@ -119,7 +106,7 @@ set -o pipefail
         echo "Both REGISTRATION_ID and CLUSTER_TOKEN have values."
     else
         echo "One or both of REGISTRATION_ID and CLUSTER_TOKEN are empty or null."
-        handle_error
+        exit 1
     fi
     sleep 2
     
@@ -139,7 +126,7 @@ set -o pipefail
         ARCH_TYPE="arm64"
     else
         echo "Unsupported architecture: $ARCH"
-        handle_error
+        exit 1
     fi
     
     echo "Detected architecture: $ARCH_TYPE"
@@ -163,7 +150,7 @@ set -o pipefail
     
     if ! command -v kubectl &> /dev/null; then
         echo "Error: kubectl not found. Please install kubectl."
-        handle_error
+        exit 1
     fi
     
     # Phase 7: Namespace Validation
@@ -171,7 +158,7 @@ set -o pipefail
         echo "Warning: Namespace 'onelens-agent' already exists."
     else
         echo "Creating namespace 'onelens-agent'..."
-        kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; handle_error; }
+        kubectl create namespace onelens-agent || { echo "Error: Failed to create namespace 'onelens-agent'."; exit 1; }
     fi
     
     # Phase 8: EBS CSI Driver Check and Installation
@@ -213,7 +200,7 @@ set -o pipefail
     
     if [ $? -ne 0 ]; then
         echo "Error: Failed to fetch pod details. Please check if Kubernetes is running and kubectl is configured correctly." >&2
-        handle_error
+        exit 1
     fi
     
     echo "Total number of pods in the cluster: $TOTAL_PODS"
@@ -324,7 +311,7 @@ set -o pipefail
     check_var() {
         if [ -z "${!1:-}" ]; then
             echo "Error: $1 is not set"
-            handle_error
+            exit 1
         fi
     }
     
@@ -341,7 +328,7 @@ set -o pipefail
     #         echo "Patching onelens-agent to version $IMAGE_TAG..."
     #     else
     #         echo "onelens-agent is already at the desired version ($IMAGE_TAG)."
-    #         handle_error
+    #         exit 1
     #     fi
     # else
     #     echo "No existing onelens-agent release found. Proceeding with installation."
@@ -362,7 +349,7 @@ set -o pipefail
     # Use -f to fail silently on server errors and -O to save with original name
     if ! curl -f -O "$URL"; then
       echo "❌ Failed to download $FILE from $URL"
-      handle_error
+      exit 1
     fi
     
     echo "✅ Downloaded $FILE successfully."
@@ -432,7 +419,7 @@ set -o pipefail
     fi
     
     # Final execution
-    CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; handle_error; }"
+    CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; exit 1; }"
     
     # Run it
     eval "$CMD"
