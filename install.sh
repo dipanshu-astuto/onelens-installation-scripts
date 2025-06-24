@@ -51,15 +51,14 @@ TMP_LOG="/tmp/last_full_output.log"
 # Function to handle errors
 handle_error() {
     local exit_code=$?
-    if [ "$exit_code" -ne 0 ]; then
-        cp "$TMP_LOG" "$ERROR_LOG"
-        cat "$ERROR_LOG"
-    fi
+    cat "$TMP_LOG"
+
+    exit $exit_code  
 }
 #trap handle_error EXIT
 
 # Trap any error
-trap 'handle_error' ERR EXIT
+trap 'handle_error' ERR 
 
 # Exit script if any command fails
 set -e
