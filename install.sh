@@ -4,7 +4,7 @@
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 ERROR_LOG="error_$TIMESTAMP.log"
 TMP_LOG="/tmp/last_full_output.log"
-
+{
 # Function to handle errors
 handle_error() {
     local exit_code=$?
@@ -27,7 +27,7 @@ trap 'handle_error' ERR
 set -e
 set -o pipefail
 
-{
+
 
 # Phase 2: Environment Variable Setup
 : "${RELEASE_VERSION:=0.1.1-beta.4}"
