@@ -10,21 +10,28 @@ touch "$LOG_FILE"
 exec > >(tee "$LOG_FILE") 2>&1
 
 send_logs() {
-    echo "Sending logs to API..."
     echo "***********************************************************************************************"
-    sleep 0.1
+    echo "📤 Sending logs to API..."
+    echo "Log Output:"
+    echo "-----------------------------------------------------------------------------------------------"
+    
     cat "$LOG_FILE"
 
-    # Escape double quotes in the log file to ensure valid JSON
-    logs=$(sed 's/"/\\"/g' "$LOG_FILE")
+    #echo "Sending logs to API..."
+    #echo "***********************************************************************************************"
+    #sleep 0.1
+    #cat "$LOG_FILE"
 
-    curl -X POST "$API_BASE_URL/v1/kubernetes/registration" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"registration_id\": \"$registration_id\",
-            \"cluster_token\": \"$cluster_token\",
-            \"status\": \"FAILED\",
-            \"logs\": \"$logs\"
+    # Escape double quotes in the log file to ensure valid JSON
+    #logs=$(sed 's/"/\\"/g' "$LOG_FILE")
+
+    #curl -X POST "$API_BASE_URL/v1/kubernetes/registration" \
+    #    -H "Content-Type: application/json" \
+    #    -d "{
+    #        \"registration_id\": \"$registration_id\",
+    #        \"cluster_token\": \"$cluster_token\",
+    #        \"status\": \"FAILED\",
+    #        \"logs\": \"$logs\"
         }"
 }
 
