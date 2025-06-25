@@ -91,7 +91,7 @@ set -o pipefail
     
     # Phase 5: Install Helm
     echo "Installing Helm for $ARCH_TYPE..."
-    curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH_TYPE}.tar.gz" -o helm.tar.gz && \
+    curls -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH_TYPE}.tar.gz" -o helm.tar.gz && \
         tar -xzvf helm.tar.gz && \
         mv linux-${ARCH_TYPE}/helm /usr/local/bin/helm && \
         rm -rf linux-${ARCH_TYPE} helm.tar.gz
