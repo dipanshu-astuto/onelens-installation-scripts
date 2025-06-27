@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Optional Phase: Download and run auxiliary setup script from GitHub if specified
+#!/bin/bash
+
 if [[ -n "$AUX_SCRIPT" ]]; then
   echo "AUX_SCRIPT is set to '$AUX_SCRIPT'. Attempting to fetch and execute from GitHub..."
 
@@ -10,12 +11,18 @@ if [[ -n "$AUX_SCRIPT" ]]; then
     echo " Successfully downloaded $AUX_SCRIPT from $AUX_SCRIPT_URL"
     chmod +x "$AUX_SCRIPT"
     ./"$AUX_SCRIPT"
+    exit 0   #  Exit script after running AUX_SCRIPT
   else
-    echo " Failed to download $AUX_SCRIPT from $AUX_SCRIPT_URL. Continuing without it..."
+    echo " Failed to download $AUX_SCRIPT from $AUX_SCRIPT_URL. Exiting..."
+    exit 1   #  Exit with error if download fails
   fi
 else
-  echo "No AUX_SCRIPT provided. Continuing with the install.sh script..."
+  echo "No AUX_SCRIPT provided. Continuing with the main install..."
 fi
+
+# ✅ Main installation logic only runs if AUX_SCRIPT was NOT set
+echo "Running main installation steps here..."
+
 
 
 set -ex
