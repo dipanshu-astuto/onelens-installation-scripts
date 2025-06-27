@@ -62,6 +62,8 @@ set -o pipefail
     
     if [[ -n "$REGISTRATION_ID" && "$REGISTRATION_ID" != "null" && -n "$CLUSTER_TOKEN" && "$CLUSTER_TOKEN" != "null" ]]; then
         echo "Both REGISTRATION_ID and CLUSTER_TOKEN have values."
+        echo "REGISTRATION_ID: $REGISTRATION_ID"
+        echo "CLUSTER_TOKEN: $CLUSTER_TOKEN"
     else
         echo "One or both of REGISTRATION_ID and CLUSTER_TOKEN are empty or null."
         false
