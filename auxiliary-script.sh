@@ -5,6 +5,33 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 ERROR_LOG="error_$TIMESTAMP.log"
 TMP_LOG="/tmp/last_full_output.log"
 
+
+# Function to send logs to the API on failure
+send_logs() {
+    echo "Sending logs to API..."
+    echo "***********************************************************************************************"
+    sleep 0.1
+    cat "$ERROR_LOG"
+
+    # Escape double quotes in the log file to ensure valid JSON
+    logs=$(sed 's/"/\\"/g' "$ERROR_LOG")
+
+    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"registration_id\": \"$REGISTRATION_ID\",
+            \"cluster_token\": \"$CLUSTER_TOKEN\",
+            \"status\": \"FAILED\",
+            \"logs\": \"$logs\"
+        }")
+
+    if [ "$response" -eq 200 ]; then
+        echo "Successfully pushed logs"
+    else
+        echo "Failed to push logs (HTTP status code: $response)"
+    fi
+}
+
 # Function to handle errors
 handle_error() {
     local exit_code=$?
@@ -17,6 +44,8 @@ handle_error() {
         cat "$TMP_LOG"
     } > "$ERROR_LOG"
     cat $ERROR_LOG
+    # Send logs to the API
+    send_logs
 
        
     exit $exit_code
