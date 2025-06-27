@@ -11,24 +11,37 @@ send_logs() {
     echo "Sending logs to API..."
     echo "***********************************************************************************************"
     sleep 0.1
+
+    # Show the error log contents
     cat "$ERROR_LOG"
 
-    # Escape double quotes in the log file to ensure valid JSON
-    logs=$(sed 's/"/\\"/g' "$ERROR_LOG")
+    # Read and escape the logs safely using jq
+    logs=$(<"$ERROR_LOG" jq -Rs .)
 
+    # Use curl to send JSON
     response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"registration_id\": \"$REGISTRATION_ID\",
-            \"cluster_token\": \"$CLUSTER_TOKEN\",
-            \"status\": \"FAILED\",
-            \"logs\": \"$logs\"
-        }")
+      -H "Content-Type: application/json" \
+      -d "{
+        \"registration_id\": \"$REGISTRATION_ID\",
+        \"registration_token\": \"$REGISTRATION_TOKEN\",
+        \"cluster_token\": \"$CLUSTER_TOKEN\",
+        \"cluster_name\": \"$CLUSTER_NAME\",
+        \"account_id\": \"$ACCOUNT_ID\",
+        \"region\": \"$REGION\",
+        \"agent_version\": \"$AGENT_VERSION\",
+        \"status\": \"FAILED\",
+        \"logs\": $logs
+      }")
 
-    if [ "$response" -eq 200 ]; then
+    # Extract the status code
+    status_code=$(echo "$response" | tail -n1)
+
+    if [ "$status_code" -eq 200 ]; then
         echo "Successfully pushed logs"
     else
-        echo "Failed to push logs (HTTP status code: $response)"
+        echo "Failed to push logs (HTTP status code: $status_code)"
+        echo "Raw response:"
+        echo "$response"
     fi
 }
 
@@ -43,7 +56,7 @@ handle_error() {
         echo "--- Output ---"
         cat "$TMP_LOG"
     } > "$ERROR_LOG"
-    cat $ERROR_LOG
+    
     # Send logs to the API
     send_logs
 
