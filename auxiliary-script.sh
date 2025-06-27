@@ -6,19 +6,22 @@ ERROR_LOG="error_$TIMESTAMP.log"
 TMP_LOG="/tmp/last_full_output.log"
 
 
-# Function to send logs to the API on failure
 send_logs() {
     echo "Sending logs to API..."
     echo "***********************************************************************************************"
     sleep 0.1
 
-    # Show the error log contents
-    cat "$ERROR_LOG"
+    # Show the error log contents if the file exists
+    if [ -f "$ERROR_LOG" ]; then
+        cat "$ERROR_LOG"
+        # Read the content safely as a JSON string
+        logs=$(<"$ERROR_LOG" jq -Rs .)
+    else
+        echo "Warning: ERROR_LOG file not found at $ERROR_LOG"
+        logs="\"No logs found (file missing)\""
+    fi
 
-    # Read and escape the logs safely using jq
-    logs=$(<"$ERROR_LOG" jq -Rs .)
-
-    # Use curl to send JSON
+    # Construct and send JSON payload with log content (not file)
     response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
       -H "Content-Type: application/json" \
       -d "{
@@ -33,17 +36,20 @@ send_logs() {
         \"logs\": $logs
       }")
 
-    # Extract the status code
-    status_code=$(echo "$response" | tail -n1)
+    # Extract HTTP response parts
+    http_body=$(echo "$response" | sed '$d')
+    http_code=$(echo "$response" | tail -n1)
 
-    if [ "$status_code" -eq 200 ]; then
+    # Report success or failure
+    if [ "$http_code" -eq 200 ]; then
         echo "Successfully pushed logs"
     else
-        echo "Failed to push logs (HTTP status code: $status_code)"
-        echo "Raw response:"
-        echo "$response"
+        echo "Failed to push logs (HTTP status code: $http_code)"
+        echo "Response body:"
+        echo "$http_body"
     fi
 }
+
 
 # Function to handle errors
 handle_error() {
