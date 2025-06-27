@@ -1,4 +1,23 @@
 #!/bin/bash
+
+# Optional Phase: Download and run auxiliary setup script from GitHub if specified
+if [[ -n "$AUX_SCRIPT" ]]; then
+  echo "AUX_SCRIPT is set to '$AUX_SCRIPT'. Attempting to fetch and execute from GitHub..."
+
+  AUX_SCRIPT_URL="https://raw.githubusercontent.com/astuto-ai/onelens-installation-scripts/master/$AUX_SCRIPT"
+
+  if curl -fsSL "$AUX_SCRIPT_URL" -o "$AUX_SCRIPT"; then
+    echo " Successfully downloaded $AUX_SCRIPT from $AUX_SCRIPT_URL"
+    chmod +x "$AUX_SCRIPT"
+    ./"$AUX_SCRIPT"
+  else
+    echo " Failed to download $AUX_SCRIPT from $AUX_SCRIPT_URL. Continuing without it..."
+  fi
+else
+  echo "No AUX_SCRIPT provided. Continuing with the install.sh script..."
+fi
+
+
 set -ex
 trap -p
 
