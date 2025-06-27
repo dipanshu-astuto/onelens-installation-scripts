@@ -11,18 +11,15 @@ send_logs() {
     echo "***********************************************************************************************"
     sleep 0.1
 
-    # Show the error log contents if the file exists
     if [ -f "$ERROR_LOG" ]; then
         cat "$ERROR_LOG"
-        # Read the content safely as a JSON string - escape properly
-        logs=$(cat "$ERROR_LOG" | jq -Rs . | sed 's/"/\\"/g')
+        # Read the error log as a JSON-escaped string (not JSON object!)
+        logs=$(jq -Rs . "$ERROR_LOG")
     else
         echo "Warning: ERROR_LOG file not found at $ERROR_LOG"
         logs="\"No logs found (file missing)\""
     fi
 
-    # Construct and send JSON payload with log content (not file)
-    # Fixed: Added proper error handling and variable validation
     if [ -z "${REGISTRATION_ID:-}" ] || [ -z "${REGISTRATION_TOKEN:-}" ] || [ -z "${CLUSTER_TOKEN:-}" ]; then
         echo "Error: Missing required variables for API call"
         echo "REGISTRATION_ID: ${REGISTRATION_ID:-not set}"
@@ -31,7 +28,6 @@ send_logs() {
         return 1
     fi
 
-    # Create proper JSON payload
     json_payload=$(jq -n \
         --arg reg_id "$REGISTRATION_ID" \
         --arg reg_token "$REGISTRATION_TOKEN" \
@@ -40,7 +36,7 @@ send_logs() {
         --arg account_id "${ACCOUNT_ID:-}" \
         --arg region "${REGION:-}" \
         --arg agent_version "${AGENT_VERSION:-}" \
-        --argjson logs "$logs" \
+        --arg logs "$logs" \
         '{
             registration_id: $reg_id,
             registration_token: $reg_token,
@@ -54,20 +50,18 @@ send_logs() {
         }')
 
     echo "Sending payload to: $API_BASE_URL/v1/kubernetes/registration"
-    
+
     response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
       -H "Content-Type: application/json" \
       -d "$json_payload")
 
-    # Extract HTTP response parts
     http_body=$(echo "$response" | sed -E 's/HTTPSTATUS:[0-9]{3}$//')
     http_code=$(echo "$response" | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
 
-    # Report success or failure
     if [ "$http_code" -eq 200 ]; then
-        echo "Successfully pushed logs"
+        echo "✅ Successfully pushed logs"
     else
-        echo "Failed to push logs (HTTP status code: $http_code)"
+        echo "❌ Failed to push logs (HTTP status code: $http_code)"
         echo "Response body:"
         echo "$http_body"
         echo "Payload sent:"
