@@ -32,8 +32,6 @@ send_logs() {
         --arg reg_id "$REGISTRATION_ID" \
         --arg reg_token "$REGISTRATION_TOKEN" \
         --arg cluster_token "$CLUSTER_TOKEN" \
-        --arg cluster_name "${CLUSTER_NAME:-}" \
-        --arg account_id "${ACCOUNT_ID:-}" \
         --arg region "${REGION:-}" \
         --arg agent_version "${AGENT_VERSION:-}" \
         --arg logs "$logs" \
@@ -41,8 +39,6 @@ send_logs() {
             registration_id: $reg_id,
             registration_token: $reg_token,
             cluster_token: $cluster_token,
-            cluster_name: $cluster_name,
-            account_id: $account_id,
             region: $region,
             agent_version: $agent_version,
             status: "FAILED",
@@ -59,9 +55,9 @@ send_logs() {
     http_code=$(echo "$response" | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
 
     if [ "$http_code" -eq 200 ]; then
-        echo "✅ Successfully pushed logs"
+        echo "Successfully pushed logs"
     else
-        echo "❌ Failed to push logs (HTTP status code: $http_code)"
+        echo "Failed to push logs (HTTP status code: $http_code)"
         echo "Response body:"
         echo "$http_body"
         echo "Payload sent:"
