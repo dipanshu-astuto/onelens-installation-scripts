@@ -14,31 +14,54 @@ send_logs() {
     # Show the error log contents if the file exists
     if [ -f "$ERROR_LOG" ]; then
         cat "$ERROR_LOG"
-        # Read the content safely as a JSON string
-        logs=$(<"$ERROR_LOG" jq -Rs .)
+        # Read the content safely as a JSON string - escape properly
+        logs=$(cat "$ERROR_LOG" | jq -Rs . | sed 's/"/\\"/g')
     else
         echo "Warning: ERROR_LOG file not found at $ERROR_LOG"
         logs="\"No logs found (file missing)\""
     fi
 
     # Construct and send JSON payload with log content (not file)
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
+    # Fixed: Added proper error handling and variable validation
+    if [ -z "${REGISTRATION_ID:-}" ] || [ -z "${REGISTRATION_TOKEN:-}" ] || [ -z "${CLUSTER_TOKEN:-}" ]; then
+        echo "Error: Missing required variables for API call"
+        echo "REGISTRATION_ID: ${REGISTRATION_ID:-not set}"
+        echo "REGISTRATION_TOKEN: ${REGISTRATION_TOKEN:-not set}" 
+        echo "CLUSTER_TOKEN: ${CLUSTER_TOKEN:-not set}"
+        return 1
+    fi
+
+    # Create proper JSON payload
+    json_payload=$(jq -n \
+        --arg reg_id "$REGISTRATION_ID" \
+        --arg reg_token "$REGISTRATION_TOKEN" \
+        --arg cluster_token "$CLUSTER_TOKEN" \
+        --arg cluster_name "${CLUSTER_NAME:-}" \
+        --arg account_id "${ACCOUNT_ID:-}" \
+        --arg region "${REGION:-}" \
+        --arg agent_version "${AGENT_VERSION:-}" \
+        --argjson logs "$logs" \
+        '{
+            registration_id: $reg_id,
+            registration_token: $reg_token,
+            cluster_token: $cluster_token,
+            cluster_name: $cluster_name,
+            account_id: $account_id,
+            region: $region,
+            agent_version: $agent_version,
+            status: "FAILED",
+            logs: $logs
+        }')
+
+    echo "Sending payload to: $API_BASE_URL/v1/kubernetes/registration"
+    
+    response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST "$API_BASE_URL/v1/kubernetes/registration" \
       -H "Content-Type: application/json" \
-      -d "{
-        \"registration_id\": \"$REGISTRATION_ID\",
-        \"registration_token\": \"$REGISTRATION_TOKEN\",
-        \"cluster_token\": \"$CLUSTER_TOKEN\",
-        \"cluster_name\": \"$CLUSTER_NAME\",
-        \"account_id\": \"$ACCOUNT_ID\",
-        \"region\": \"$REGION\",
-        \"agent_version\": \"$AGENT_VERSION\",
-        \"status\": \"FAILED\",
-        \"logs\": $logs
-      }")
+      -d "$json_payload")
 
     # Extract HTTP response parts
-    http_body=$(echo "$response" | sed '$d')
-    http_code=$(echo "$response" | tail -n1)
+    http_body=$(echo "$response" | sed -E 's/HTTPSTATUS:[0-9]{3}$//')
+    http_code=$(echo "$response" | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
 
     # Report success or failure
     if [ "$http_code" -eq 200 ]; then
@@ -47,6 +70,8 @@ send_logs() {
         echo "Failed to push logs (HTTP status code: $http_code)"
         echo "Response body:"
         echo "$http_body"
+        echo "Payload sent:"
+        echo "$json_payload"
     fi
 }
 
