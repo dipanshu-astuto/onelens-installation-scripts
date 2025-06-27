@@ -32,6 +32,8 @@ send_logs() {
         --arg reg_id "$REGISTRATION_ID" \
         --arg reg_token "$REGISTRATION_TOKEN" \
         --arg cluster_token "$CLUSTER_TOKEN" \
+        --arg cluster_name "$CLUSTER_NAME" \
+        --arg account_id "$ACCOUNT_ID" \
         --arg region "${REGION:-}" \
         --arg agent_version "${AGENT_VERSION:-}" \
         --arg logs "$logs" \
@@ -39,6 +41,8 @@ send_logs() {
             registration_id: $reg_id,
             registration_token: $reg_token,
             cluster_token: $cluster_token,
+            cluster_name: $cluster_name,
+            account_id: $account_id,
             region: $region,
             agent_version: $agent_version,
             status: "FAILED",
