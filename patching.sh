@@ -160,9 +160,9 @@ echo "helm upgrade onelens-agent onelens/onelens-agent with dynamic resource all
 
 helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts
 helm repo update
-REVISION=$(helm history onelens-agent -n onelens-agent | grep -v '02:00' | tail -1 | awk '{print $1}')
-echo $REVISION
-helm rollback onelens-agent $REVISION -n onelens-agent
+# REVISION=$(helm history onelens-agent -n onelens-agent | grep -v '02:00' | tail -1 | awk '{print $1}')
+# echo $REVISION
+# helm rollback onelens-agent $REVISION -n onelens-agent
 
 # # Perform the upgrade with dynamically calculated resource values
 # helm upgrade onelens-agent onelens/onelens-agent \
