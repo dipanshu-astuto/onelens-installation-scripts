@@ -160,6 +160,7 @@ echo "helm upgrade onelens-agent onelens/onelens-agent with dynamic resource all
 
 helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts
 helm repo update
+helm rollback onelens-agent 1 -n onelens-agent
 
 # # Perform the upgrade with dynamically calculated resource values
 # helm upgrade onelens-agent onelens/onelens-agent \
