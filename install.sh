@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 if [[ -n "$AUX_SCRIPT" ]]; then
   echo "AUX_SCRIPT is set to '$AUX_SCRIPT'. Attempting to fetch and execute from GitHub..."
 
