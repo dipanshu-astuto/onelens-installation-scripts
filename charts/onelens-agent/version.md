@@ -9,4 +9,6 @@
 | 0.1.1-beta.2   | Upgrade to onelens-agent-base chart v0.1.1-beta.2      |
 | 0.1.1-beta.3 | Use the custom prometheus scrape config |0.1.1-beta.3 | 
 | 0.1.1-beta.4 | Support for imagePullSecrets | 0.1.1-beta.4 |
+| 1.1.0 | Versioning Changes | 1.1.0 |
+
 
