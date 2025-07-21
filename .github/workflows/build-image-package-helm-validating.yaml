@@ -423,12 +423,12 @@ jobs:
             echo "Chart.lock has changes"
           fi
           
-          # # If no files changed, skip remaining steps
-          # if [ "$CHART_CHANGED" = false ] && [ "$VERSION_CHANGED" = false ] && [ "$LOCK_CHANGED" = false ]; then
-          #   echo "No changes detected in Chart.yaml, version.md, or Chart.lock"
-          #   echo "should_skip=true" >> $GITHUB_OUTPUT
-          #   exit 0
-          # fi
+          # If no files changed, skip remaining steps
+          if [ "$CHART_CHANGED" = false ] && [ "$VERSION_CHANGED" = false ] && [ "$LOCK_CHANGED" = false ]; then
+            echo "No changes detected in Chart.yaml, version.md, or Chart.lock"
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           
           echo "Changes detected - proceeding with validation and packaging"
           echo "should_skip=false" >> $GITHUB_OUTPUT
