@@ -4,6 +4,8 @@ job:
   image: public.ecr.aws/w7k6q5m9/onelens-deployer
   imagePullPolicy: Always
   restartPolicy: Never
+  backoffLimit: 2 
+  ttlSecondsAfterFinished: 300
   env: 
     deployment_type: job
   # Tolerations allow the agent to be scheduled on nodes with matching taints
