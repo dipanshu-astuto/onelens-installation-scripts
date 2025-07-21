@@ -4,7 +4,8 @@ kind: Job
 metadata:
   name: {{ .Values.job.name }}
 spec:
-  ttlSecondsAfterFinished: 120
+  backoffLimit: {{ .Values.job.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished }}
   template:
     spec:
       serviceAccountName: {{ .Values.job.serviceAccount.name }}
