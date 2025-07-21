@@ -1,1 +1,581 @@
+# name: Build and Deploy OnelensDeployer and Package Onelens-Agent Helm Chart
+
+# permissions:
+#   id-token: write
+#   contents: write
+
+# on:
+#   push:
+#     branches:
+#       - master
+#     paths:
+#       - 'Dockerfile'
+#       - 'entrypoint.sh'
+#       - 'charts/onelensdeployer/**'
+#       - 'charts/onelens-agent/**'
+      
+#   workflow_dispatch:
+#     inputs:
+#       skip_vulnerability_check:
+#         description: 'Skip vulnerability check and push image anyway'
+#         required: false
+#         default: false
+#         type: boolean
+
+# jobs:
+#   detect_changes:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       docker_changed: ${{ steps.check_docker.outputs.changed }}
+#       entrypoint_changed: ${{ steps.check_entrypoint.outputs.changed }}
+#       chart_changed: ${{ steps.check_chart.outputs.changed }}
+#       chart_version_changed: ${{ steps.chart_version.outputs.version_changed }}
+#       new_chart_version: ${{ steps.chart_version.outputs.new_version }}
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+
+#       - name: Install yq
+#         run: |
+#           sudo wget https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 -O /usr/bin/yq
+#           sudo chmod +x /usr/bin/yq
+
+#       - name: Check if Dockerfile changed
+#         id: check_docker
+#         run: |
+#           if git rev-parse HEAD^ >/dev/null 2>&1; then
+#             docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^Dockerfile' || true)
+#           else
+#             docker_diff=$(git diff --name-only HEAD | grep '^Dockerfile' || true)
+#           fi
+
+#           if [ -n "$docker_diff" ]; then
+#             echo "changed=true" >> $GITHUB_OUTPUT
+#           else
+#             echo "changed=false" >> $GITHUB_OUTPUT
+#           fi
+
+#       - name: Check if entrypoint changed
+#         id: check_entrypoint
+#         run: |
+#           if git rev-parse HEAD^ >/dev/null 2>&1; then
+#             entrypoint_diff=$(git diff --name-only HEAD^ HEAD | grep '^entrypoint.sh' || true)
+#           else
+#             entrypoint_diff=$(git diff --name-only HEAD | grep '^entrypoint.sh' || true)
+#           fi
+
+#           if [ -n "$entrypoint_diff" ]; then
+#             echo "changed=true" >> $GITHUB_OUTPUT
+#           else
+#             echo "changed=false" >> $GITHUB_OUTPUT
+#           fi
+
+
+
+#       - name: Check if chart files changed
+#         id: check_chart
+#         run: |
+#           if git rev-parse HEAD^ >/dev/null 2>&1; then
+#             chart_diff=$(git diff --name-only HEAD^ HEAD | grep '^charts/onelensdeployer/' || true)
+#           else
+#             chart_diff=$(git diff --name-only HEAD | grep '^charts/onelensdeployer/' || true)
+#           fi
+
+#           if [ -n "$chart_diff" ]; then
+#             echo "changed=true" >> $GITHUB_OUTPUT
+#           else
+#             echo "changed=false" >> $GITHUB_OUTPUT
+#           fi
+
+#       - name: Detect Chart Version Change
+#         id: chart_version
+#         run: |
+#           CHART_PATH="charts/onelensdeployer/Chart.yaml"
+#           CURRENT_VERSION=$(yq '.version' $CHART_PATH)
+
+#           git show HEAD^:$CHART_PATH > old_chart.yaml || echo "version: 0.0.0" > old_chart.yaml
+#           PREVIOUS_VERSION=$(yq '.version' old_chart.yaml)
+
+#           echo "Current: $CURRENT_VERSION, Previous: $PREVIOUS_VERSION"
+#           if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+#             echo "version_changed=true" >> $GITHUB_OUTPUT
+#             echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+#           else
+#             echo "version_changed=false" >> $GITHUB_OUTPUT
+#           fi
+
+#   build-docker:
+#     needs: detect_changes
+#     if: needs.detect_changes.outputs.docker_changed == 'true' || needs.detect_changes.outputs.entrypoint_changed == 'true' || github.event_name == 'workflow_dispatch'
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write
+#       contents: read
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+
+#       - name: Set up QEMU
+#         uses: docker/setup-qemu-action@v2
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+#           aws-region: us-east-1
+#           role-session-name: GitHubActionsSession
+
+#       - name: Login to Amazon ECR Public
+#         uses: aws-actions/amazon-ecr-login@v2
+#         with:
+#           registry-type: public
+
+#       - name: Build Docker Image for Scanning (single platform)
+#         id: build
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           file: ./Dockerfile
+#           platforms: linux/amd64
+#           push: false
+#           tags: public.ecr.aws/w7k6q5m9/onelens-deployer:latest
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
+#           load: true
+
+#       - name: Save Docker image
+#         run: docker save public.ecr.aws/w7k6q5m9/onelens-deployer:latest -o /tmp/image.tar
+
+#       - name: Upload image artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: docker-image
+#           path: /tmp/image.tar
+
+#   trivy-scan:
+#     name: Trivy Security Scan
+#     needs: build-docker
+#     if: inputs.skip_vulnerability_check != true
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write
+#       contents: read
+#     outputs:
+#       vulnerabilities_found: ${{ steps.scan.outputs.vulnerabilities_found }}
+#       scan_results: ${{ steps.scan.outputs.scan_results }}
+#     steps:
+#       - name: Download image artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: docker-image
+#           path: /tmp
+
+#       - name: Load Docker image
+#         run: docker load --input /tmp/image.tar
+
+#       - name: Install Trivy
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+#           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+#           echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+#           sudo apt-get update
+#           sudo apt-get install -y trivy
+
+#       - name: Run Trivy Scan on Docker Image
+#         id: scan
+#         run: |
+#           IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
+#           echo "Scanning image $IMAGE with Trivy"
+          
+#           # Run trivy scan and capture output
+#           trivy image --severity CRITICAL,HIGH --no-progress --format json $IMAGE > trivy-results.json
+          
+#           # Check if vulnerabilities were found
+#           VULN_COUNT=$(cat trivy-results.json | jq '[.Results[]?.Vulnerabilities // []] | add | length')
+          
+#           if [ "$VULN_COUNT" -gt 0 ]; then
+#             echo "vulnerabilities_found=true" >> $GITHUB_OUTPUT
+#             echo "Found $VULN_COUNT critical/high vulnerabilities"
+            
+#             # Generate human-readable summary
+#             trivy image --severity CRITICAL,HIGH --no-progress $IMAGE > trivy-summary.txt
+            
+#             # Create scan results summary
+#             echo "scan_results<<EOF" >> $GITHUB_OUTPUT
+#             echo "🚨 **Security Vulnerabilities Found: $VULN_COUNT**" >> $GITHUB_OUTPUT
+#             echo "" >> $GITHUB_OUTPUT
+#             echo "Critical and High severity vulnerabilities detected in the Docker image." >> $GITHUB_OUTPUT
+#             echo "Please review the full scan results below:" >> $GITHUB_OUTPUT
+#             echo "" >> $GITHUB_OUTPUT
+#             cat trivy-summary.txt >> $GITHUB_OUTPUT
+#             echo "EOF" >> $GITHUB_OUTPUT
+            
+#             # Fail the job if vulnerabilities are found
+#             echo "❌ Failing build due to security vulnerabilities"
+#             exit 1
+#           else
+#             echo "vulnerabilities_found=false" >> $GITHUB_OUTPUT
+#             echo "scan_results=✅ No critical or high severity vulnerabilities found!" >> $GITHUB_OUTPUT
+#             echo "✅ No critical/high vulnerabilities found. Image is safe to push."
+#           fi
+
+#       - name: Upload Trivy results
+#         if: failure()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: trivy-results
+#           path: |
+#             trivy-results.json
+#             trivy-summary.txt
+
+#   push-docker:
+#     name: Push Docker Image
+#     needs: [build-docker, trivy-scan]
+#     if: |
+#       always() && 
+#       needs.build-docker.result == 'success' &&
+#       (needs.trivy-scan.result == 'success' || 
+#        needs.trivy-scan.result == 'skipped' || 
+#        inputs.skip_vulnerability_check == true)
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write
+#       contents: read
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+
+#       - name: Set up QEMU
+#         uses: docker/setup-qemu-action@v2
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+#           aws-region: us-east-1
+#           role-session-name: GitHubActionsSession
+
+#       - name: Login to Amazon ECR Public
+#         uses: aws-actions/amazon-ecr-login@v2
+#         with:
+#           registry-type: public
+
+#       - name: Push Multi-Arch Docker Image
+#         run: |
+#           IMAGE="public.ecr.aws/w7k6q5m9/onelens-deployer:latest"
+#           echo "Building and pushing multi-arch image: $IMAGE"
+          
+#           # Build and push the multi-platform image
+#           docker buildx build \
+#             --platform linux/amd64,linux/arm64 \
+#             --tag $IMAGE \
+#             --push \
+#             --cache-from type=gha \
+#             --cache-to type=gha,mode=max \
+#             .
+          
+#           if [ "${{ inputs.skip_vulnerability_check }}" == "true" ]; then
+#             echo " Multi-arch image pushed with vulnerability check skipped"
+#           elif [ "${{ needs.trivy-scan.result }}" == "skipped" ]; then
+#             echo " Multi-arch image pushed with vulnerability check skipped"
+#           else
+#             echo " Clean multi-arch image pushed successfully"
+#           fi
+
+
+#   package_and_push_helm:
+#     needs: detect_changes
+#     if: needs.detect_changes.outputs.chart_changed == 'true'
+#     runs-on: ubuntu-latest
+#     steps:
+
+
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+        
+#       - name: Check Chart.yaml version update
+#         run: |
+#           if [ "${{ needs.detect_changes.outputs.chart_version_changed }}" != "true" ]; then
+#             echo "⚠️ Changes detected in chart/onelensdeployer but Chart.yaml version was NOT updated."
+#             exit 1   # Fail job, or use exit 0 if you want to just warn and skip
+#           else
+#             echo "✅ Chart.yaml version updated, proceeding."
+#           fi
+          
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+#           aws-region: us-east-1
+#           role-session-name: GitHubActionsSession
+
+#       - name: Authenticate Helm with AWS ECR
+#         run: |
+#           aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.us-east-1.amazonaws.com
+
+#       - name: Prepare chart packaging
+#         working-directory: charts/onelensdeployer
+#         run: |
+#           echo "📥 Updating Helm dependencies"
+#           helm dependency update
+#           echo "📦 Packaging Helm chart"
+#           helm package .
+#           pwd
+
+#       - name: Commit and push packaged chart to root
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
+
+#           echo "🗂️ Updating Helm repo index"
+#           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+
+#           git config user.name "github-actions"
+#           git config user.email "github-actions@github.com"
+
+#           git add onelensdeployer-*.tgz index.yaml
+#           git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
+#           git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+
+#       - name: Extract packaged Helm chart version
+#         run: |
+#           VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+#           echo "$VERSION" > helm-package-version.txt
+#           echo "Packaged Helm chart version: $VERSION"
+
+#       - name: Upload Helm package version artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: helm-package-version
+#           path: helm-package-version.txt
+
+
+
+
+# #Package Onelens-Agent Helm Chart
+
+#   validate-and-package:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Repo
+#         uses: actions/checkout@v3
+#         with:
+#           fetch-depth: 0  # Needed to access previous commits
+
+#       - name: Install yq for YAML manipulation
+#         run: |
+#           sudo wget https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 -O /usr/bin/yq
+#           sudo chmod +x /usr/bin/yq
+
+#       - name: Set up Helm
+#         uses: azure/setup-helm@v3
+#         with:
+#           version: v3.13.3
+
+#       - name: Check for version changes
+#         id: version_check
+#         run: |
+#           CHART_FILE="charts/onelens-agent/Chart.yaml"
+#           VERSION_FILE="charts/onelens-agent/version.md"
+#           LOCK_FILE="charts/onelens-agent/Chart.lock"
+          
+#           # Get the previous commit
+#           PREV_COMMIT=$(git rev-parse HEAD^)
+          
+#           # Check if any of the files changed
+#           CHART_CHANGED=false
+#           VERSION_CHANGED=false
+#           LOCK_CHANGED=false
+          
+#           if ! git diff --quiet "$PREV_COMMIT" -- "$CHART_FILE"; then
+#             CHART_CHANGED=true
+#             echo "Chart.yaml has changes"
+#           fi
+          
+#           if ! git diff --quiet "$PREV_COMMIT" -- "$VERSION_FILE"; then
+#             VERSION_CHANGED=true
+#             echo "version.md has changes"
+#           fi
+          
+#           if ! git diff --quiet "$PREV_COMMIT" -- "$LOCK_FILE"; then
+#             LOCK_CHANGED=true
+#             echo "Chart.lock has changes"
+#           fi
+          
+#           # # If no files changed, skip remaining steps
+#           # if [ "$CHART_CHANGED" = false ] && [ "$VERSION_CHANGED" = false ] && [ "$LOCK_CHANGED" = false ]; then
+#           #   echo "No changes detected in Chart.yaml, version.md, or Chart.lock"
+#           #   echo "should_skip=true" >> $GITHUB_OUTPUT
+#           #   exit 0
+#           # fi
+          
+#           echo "Changes detected - proceeding with validation and packaging"
+#           echo "should_skip=false" >> $GITHUB_OUTPUT
+
+#       - name: Early exit if no changes
+#         if: steps.version_check.outputs.should_skip == 'true'
+#         run: |
+#           echo " No version changes detected. Skipping packaging and publishing steps."
+#           exit 0
+
+#       - name: Check if dependency version changed but chart version not updated
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         run: |
+#           CHART_FILE="charts/onelens-agent/Chart.yaml"
+          
+#           # Get the previous commit
+#           PREV_COMMIT=$(git rev-parse HEAD^)
+          
+#           # Extract current and previous values
+#           OLD_DEP_VERSIONS=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.dependencies[].version')
+#           NEW_DEP_VERSIONS=$(cat "$CHART_FILE" | yq '.dependencies[].version')
+#           OLD_CHART_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.version')
+#           NEW_CHART_VERSION=$(cat "$CHART_FILE" | yq '.version')
+#           OLD_APP_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.appVersion')
+#           NEW_APP_VERSION=$(cat "$CHART_FILE" | yq '.appVersion')
+          
+#           if [ "$OLD_DEP_VERSIONS" != "$NEW_DEP_VERSIONS" ]; then
+#             echo " Detected a change in dependency versions."
+#             if [ "$OLD_CHART_VERSION" = "$NEW_CHART_VERSION" ] || [ "$OLD_APP_VERSION" = "$NEW_APP_VERSION" ]; then
+#               echo " Dependency version changed, but version or appVersion not updated."
+#               echo "Old Chart version: $OLD_CHART_VERSION"
+#               echo "New Chart version: $NEW_CHART_VERSION"
+#               echo "Old App version: $OLD_APP_VERSION"
+#               echo "New App version: $NEW_APP_VERSION"
+#               exit 1
+#             fi
+#           fi
+
+#       - name: Check if chart version is documented in version.md
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         run: |
+#           CHART_FILE="charts/onelens-agent/Chart.yaml"
+#           VERSION_FILE="charts/onelens-agent/version.md"
+          
+#           PREV_COMMIT=$(git rev-parse HEAD^)
+#           OLD_CHART_VERSION=$(git show "$PREV_COMMIT:$CHART_FILE" | yq '.version')
+#           NEW_CHART_VERSION=$(cat "$CHART_FILE" | yq '.version')
+          
+#           if [ "$OLD_CHART_VERSION" != "$NEW_CHART_VERSION" ]; then
+#             echo " Chart version changed from $OLD_CHART_VERSION to $NEW_CHART_VERSION"
+#             if ! grep -q "$NEW_CHART_VERSION" "$VERSION_FILE"; then
+#               echo " Chart version updated to $NEW_CHART_VERSION, but version.md does not contain it."
+#               exit 1
+#             else
+#               echo " version.md contains the updated Chart version $NEW_CHART_VERSION"
+#             fi
+#           fi
+
+#       - name: Check Chart.lock matches Chart.yaml dependencies
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         run: |
+#           CHART_FILE="charts/onelens-agent/Chart.yaml"
+#           LOCK_FILE="charts/onelens-agent/Chart.lock"
+      
+#           echo " Chart.yaml Dependencies:"
+#           yq e -o=json "$CHART_FILE" | jq -r '.dependencies[] | "\(.name): \(.version)"' | sort > chart_yaml_deps.txt
+#           cat chart_yaml_deps.txt
+
+#           echo " Chart.lock Dependencies:"
+#           yq e -o=json "$LOCK_FILE" | jq -r '.dependencies[] | "\(.name): \(.version)"' | sort > chart_lock_deps.txt
+#           cat chart_lock_deps.txt
+
+#           echo ""
+#           echo "🔍 Comparing Chart.yaml and Chart.lock dependency versions..."
+
+#           MISMATCH=0
+#           while read -r line; do
+#             NAME=$(echo "$line" | cut -d':' -f1)
+#             VERSION_YAML=$(echo "$line" | cut -d':' -f2 | tr -d ' ')
+#             VERSION_LOCK=$(grep "^$NAME:" chart_lock_deps.txt | cut -d':' -f2 | tr -d ' ')
+#             if [ -z "$VERSION_LOCK" ]; then
+#               VERSION_LOCK="MISSING"
+#             fi
+
+#             if [ "$VERSION_YAML" != "$VERSION_LOCK" ]; then
+#               echo " Version mismatch for dependency '$NAME': Chart.yaml has '$VERSION_YAML', Chart.lock has '$VERSION_LOCK'"
+#               MISMATCH=1
+#             fi
+#           done < chart_yaml_deps.txt
+
+#           if [ "$MISMATCH" -eq 1 ]; then
+#             echo ""
+#             echo " Run: helm dependency update charts/onelens-agent"
+#             exit 1
+#           else
+#             echo " All dependency versions match between Chart.yaml and Chart.lock"
+#           fi
+
+#       - name: All checks passed
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         run: echo " All checks passed. Proceeding with packaging steps."
+
+
+          
+#       - name: Configure AWS Credentials
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
+#           aws-region: ap-south-1
+#           role-session-name: GitHubActionsSession
+
+#       - name: Authenticate Helm with AWS ECR
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         run: |
+#           aws ecr get-login-password --region ap-south-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.ap-south-1.amazonaws.com
+
+#       - name: Prepare chart packaging
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         working-directory: charts/onelens-agent
+#         run: |
+#           echo " Updating Helm dependencies"
+#           helm dependency update
+#           echo " Packaging Helm chart"
+#           helm package .
+
+#       - name: Commit and push packaged chart to root
+#         if: steps.version_check.outputs.should_skip == 'false'
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           # Move the .tgz Helm package to the repo root
+#           mv charts/onelens-agent/onelens-agent-*.tgz .
+#           echo " Updating Helm repo index"
+#           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+          
+#           # Set GitHub Actions bot as the commit author
+#           git config user.name "github-actions"
+#           git config user.email "github-actions@github.com"
+          
+#           # Stage and commit the package
+#           git add onelens-agent-*.tgz index.yaml
+#           git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
+          
+#           # Force push to overwrite any conflicts (use with caution)
+#           git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+
+#       - name: Extract packaged Helm chart version
+#         run: |
+#           VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+#           echo "$VERSION" > helm-package-version.txt
+#           echo "Packaged Helm chart version: $VERSION"
+
+#       - name: Upload Helm package version artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: helm-package-version
+#           path: helm-package-version.txt
+
 
