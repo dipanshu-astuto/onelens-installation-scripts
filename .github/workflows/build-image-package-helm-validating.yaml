@@ -34,17 +34,22 @@ on:
 
 jobs:
   validate-branch:
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Check if branch is master
+      - name: Check if branch is master (only for manual trigger)
         run: |
+          echo "Event: ${{ github.event_name }}"
           echo "Branch: ${{ github.ref }}"
-          if [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
-            echo " This workflow can only be manually triggered on the 'master' branch."
-            exit 1
+  
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
+              echo " This workflow can only be manually triggered on the 'master' branch."
+              exit 1
+            else
+              echo " Manual trigger on master allowed."
+            fi
           else
-            echo " Manual trigger on master allowed."
+            echo " Not a manual trigger, skipping branch validation."
           fi
 
   detect_changes:
