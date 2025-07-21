@@ -33,7 +33,23 @@ on:
         type: boolean
 
 jobs:
+  validate-branch:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if branch is master
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          if [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
+            echo " This workflow can only be manually triggered on the 'master' branch."
+            exit 1
+          else
+            echo " Manual trigger on master allowed."
+          fi
+
   detect_changes:
+    needs: [validate-branch]
+    if: github.event_name != 'workflow_dispatch' || needs.validate-branch.result == 'success'
     runs-on: ubuntu-latest
     outputs:
       docker_changed: ${{ steps.check_docker.outputs.changed }}
@@ -375,6 +391,8 @@ jobs:
 #Package Onelens-Agent Helm Chart
 
   validate-and-package:
+    needs: [validate-branch]
+    if: (github.event_name != 'workflow_dispatch') || needs.validate-branch.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -593,14 +611,15 @@ jobs:
 
 
   validate_helm_chart:
-    name: Validate Published Helm Charts
     needs:
       - package_and_push_helm
       - validate-and-package
     if: |
-      always() &&
+      (github.event_name != 'workflow_dispatch') || needs.validate-branch.result == 'success'
+      &&
       (needs.package_and_push_helm.result == 'success' || 
        needs.validate-and-package.result == 'success')
+       
     runs-on: ubuntu-latest
 
     steps:
