@@ -365,7 +365,7 @@ prometheus:
     terminationGracePeriodSeconds: 300
 
     retention: "30d"
-    retentionSize: "9GB"
+    retentionSize: "6GB"
 
   ruleFiles: {}
 
