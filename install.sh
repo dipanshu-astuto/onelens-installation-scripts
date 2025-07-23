@@ -379,10 +379,10 @@ CMD="helm upgrade --install onelens-agent -n onelens-agent --create-namespace on
     --set onelens-agent.resources.requests.cpu=\"$ONELENS_CPU_REQUEST\" \
     --set onelens-agent.resources.requests.memory=\"$ONELENS_MEMORY_REQUEST\" \
     --set onelens-agent.resources.limits.cpu=\"$ONELENS_CPU_LIMIT\" \
-    --set onelens-agent.resources.limits.memory=\"$ONELENS_MEMORY_LIMIT\"" \
+    --set onelens-agent.resources.limits.memory=\"$ONELENS_MEMORY_LIMIT\" \
     --set-string prometheus.server.retention=\"$PROMETHEUS_RETENTION\" \
     --set-string prometheus.server.retentionSize=\"$PROMETHEUS_RETENTION_SIZE\" \
-    --set-string prometheus.server.persistentVolume.size=\"$PROMETHEUS_VOLUME_SIZE\" 
+    --set-string prometheus.server.persistentVolume.size=\"$PROMETHEUS_VOLUME_SIZE\""
 
 # Append tolerations only if set
 if [[ -n "$TOLERATION_KEY" && -n "$TOLERATION_VALUE" && -n "$TOLERATION_OPERATOR" && -n "$TOLERATION_EFFECT" ]]; then
