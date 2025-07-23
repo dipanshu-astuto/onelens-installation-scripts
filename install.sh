@@ -407,7 +407,7 @@ CMD+=" --wait || { echo \"Error: Helm deployment failed.\"; exit 1; }"
 # Run it
 eval "$CMD"
 
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus-opencost-exporter -n onelens-agent --timeout=300s || {
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=prometheus-opencost-exporter -n onelens-agent --timeout=800s || {
     echo "Error: Pods failed to become ready."
     echo "Installation Failed."
     false
@@ -426,6 +426,7 @@ curl -X PUT "$API_BASE_URL/v1/kubernetes/registration" \
         \"status\": \"CONNECTED\"
     }"
 echo "To verify deployment: kubectl get pods -n onelens-agent"
+sleep 60
 kubectl delete job onelensdeployerjob -n onelens-agent
 kubectl delete clusterrole onelensdeployerjob-clusterrole
 kubectl delete clusterrolebinding onelensdeployerjob-clusterrolebinding
