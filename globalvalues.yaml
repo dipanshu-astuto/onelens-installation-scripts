@@ -21,7 +21,7 @@ onelens-agent:
     reclaimPolicy: Retain
     volumeBindingMode: WaitForFirstConsumer
     volumeType: gp3
-    allowVolumeExpansion: false
+    allowVolumeExpansion: true
 
   resources:
     requests:
