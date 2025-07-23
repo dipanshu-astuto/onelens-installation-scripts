@@ -290,6 +290,26 @@ else
     ONELENS_MEMORY_LIMIT="690Mi"
 fi
 
+
+PROMETHEUS_RETENTION="10d"
+
+if [ "$TOTAL_PODS" -lt 100 ]; then
+    PROMETHEUS_RETENTION_SIZE="6GB"
+    PROMETHEUS_VOLUME_SIZE="10Gi"
+elif [ "$TOTAL_PODS" -lt 500 ]; then
+    PROMETHEUS_RETENTION_SIZE="15GB"
+    PROMETHEUS_VOLUME_SIZE="20Gi"
+elif [ "$TOTAL_PODS" -lt 1000 ]; then
+    PROMETHEUS_RETENTION_SIZE="25GB"
+    PROMETHEUS_VOLUME_SIZE="30Gi"
+elif [ "$TOTAL_PODS" -lt 1500 ]; then
+    PROMETHEUS_RETENTION_SIZE="35GB"
+    PROMETHEUS_VOLUME_SIZE="40Gi"
+else
+    PROMETHEUS_RETENTION_SIZE="45GB"
+    PROMETHEUS_VOLUME_SIZE="50Gi"
+fi
+
 # Phase 10: Helm Deployment
 check_var() {
     if [ -z "${!1:-}" ]; then
@@ -359,7 +379,10 @@ CMD="helm upgrade --install onelens-agent -n onelens-agent --create-namespace on
     --set onelens-agent.resources.requests.cpu=\"$ONELENS_CPU_REQUEST\" \
     --set onelens-agent.resources.requests.memory=\"$ONELENS_MEMORY_REQUEST\" \
     --set onelens-agent.resources.limits.cpu=\"$ONELENS_CPU_LIMIT\" \
-    --set onelens-agent.resources.limits.memory=\"$ONELENS_MEMORY_LIMIT\""
+    --set onelens-agent.resources.limits.memory=\"$ONELENS_MEMORY_LIMIT\"" \
+    --set-string prometheus.server.retention=\"$PROMETHEUS_RETENTION\" \
+    --set-string prometheus.server.retentionSize=\"$PROMETHEUS_RETENTION_SIZE\" \
+    --set-string prometheus.server.persistentVolume.size=\"$PROMETHEUS_VOLUME_SIZE\" 
 
 # Append tolerations only if set
 if [[ -n "$TOLERATION_KEY" && -n "$TOLERATION_VALUE" && -n "$TOLERATION_OPERATOR" && -n "$TOLERATION_EFFECT" ]]; then
