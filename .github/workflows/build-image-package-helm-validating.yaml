@@ -14,14 +14,14 @@ on:
       - 'charts/onelensdeployer/**'
       - 'charts/onelens-agent/**'
 
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'Dockerfile'
-      - 'entrypoint.sh'
-      - 'charts/onelensdeployer/**'
-      - 'charts/onelens-agent/**'
+  # pull_request:
+  #   branches:
+  #     - master
+  #   paths:
+  #     - 'Dockerfile'
+  #     - 'entrypoint.sh'
+  #     - 'charts/onelensdeployer/**'
+  #     - 'charts/onelens-agent/**'
 
       
   workflow_dispatch:
