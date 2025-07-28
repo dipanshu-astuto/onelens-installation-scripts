@@ -1,5 +1,10 @@
 name: Helm Chart PR Preview
 
+
+permissions:  
+  id-token: write
+  contents: read
+
 on:
   pull_request:
     branches:
