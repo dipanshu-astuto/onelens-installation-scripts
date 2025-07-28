@@ -23,7 +23,12 @@ jobs:
     - name: Package charts
       run: |
         mkdir -p output
+        echo "Updating dependencies for onelensdeployer..."
+        helm dependency update charts/onelensdeployer
         helm package charts/onelensdeployer -d output
+
+        echo "Updating dependencies for onelens-agent..."
+        helm dependency update charts/onelens-agent
         helm package charts/onelens-agent -d output
 
     - name: Create index.yaml for preview
