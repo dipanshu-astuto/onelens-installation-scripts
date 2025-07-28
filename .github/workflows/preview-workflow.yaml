@@ -55,7 +55,7 @@ jobs:
       - name: Push PR preview to master branch
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.PREVIEW_WORKFLOW_TOKEN }}
           publish_dir: ./output
           destination_dir: preview/pr-${{ github.event.pull_request.number }}
           publish_branch: master
