@@ -54,7 +54,7 @@ jobs:
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
 
           # Update Helm dependencies (regenerates Chart.lock)
-          helm dependency update "$AGENT_CHART_DIR"
+          # helm dependency update "$AGENT_CHART_DIR"
 
           # Patch onelens-agent-base version only in Chart.lock
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
