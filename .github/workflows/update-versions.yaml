@@ -1,0 +1,79 @@
+name: Update Helm Chart Versions
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: 'Helm chart version (e.g. 1.2.0)'
+        required: true
+        default: ''
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      AGENT_CHART_DIR: charts/onelens-agent
+      DEPLOYER_CHART_DIR: charts/onelensdeployer
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install yq and Helm
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/download/v4.40.5/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Determine chart version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.chart_version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+            VERSION="${VERSION#v}"
+          fi
+          echo "Using chart version: $VERSION"
+          echo "chart_version=$VERSION" >> $GITHUB_ENV
+
+      - name: Update onelens-agent chart files
+        run: |
+          echo "Updating $AGENT_CHART_DIR"
+
+          yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+
+          echo "Updating Helm dependencies for onelens-agent"
+          helm dependency update "$AGENT_CHART_DIR"
+
+          echo "Appending version to version.md"
+          echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
+
+      - name: Update onelensdeployer chart files
+        run: |
+          echo "Updating $DEPLOYER_CHART_DIR"
+
+          yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
+          yq e ".appVersion = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
+
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add $AGENT_CHART_DIR/Chart.yaml
+          git add $AGENT_CHART_DIR/Chart.lock
+          git add $AGENT_CHART_DIR/version.md
+          git add $DEPLOYER_CHART_DIR/Chart.yaml
+
+          git commit -m "Bump charts to version $chart_version" || echo "No changes to commit"
+          git push
