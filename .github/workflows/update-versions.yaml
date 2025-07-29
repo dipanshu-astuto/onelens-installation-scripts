@@ -24,6 +24,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: master            # ✅ Ensure we checkout master branch
+          fetch-depth: 0         # ✅ Get full history for tags, branches
 
       - name: Install yq and Helm
         run: |
@@ -46,27 +49,14 @@ jobs:
       - name: Update onelens-agent chart files
         run: |
           echo "🔄 Updating $AGENT_CHART_DIR"
-
-          # Update Chart.yaml version
           yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
-
-          # Update onelens-agent-base dependency version inside Chart.yaml
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
-
-          # Update Helm dependencies (regenerates Chart.lock)
-          # helm dependency update "$AGENT_CHART_DIR"
-
-          # Patch onelens-agent-base version only in Chart.lock
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
-
-          # Append version to version.md
           echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
 
       - name: Update onelensdeployer chart files
         run: |
           echo "🔄 Updating $DEPLOYER_CHART_DIR"
-
-          # Update Chart.yaml version (no appVersion field here)
           yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
 
       - name: Commit and push changes
@@ -82,4 +72,6 @@ jobs:
           git add $DEPLOYER_CHART_DIR/Chart.yaml
 
           git commit -m "Bump charts to version $chart_version" || echo "No changes to commit"
-          git push
+          
+          # ✅ Fix for detached HEAD: push explicitly to master
+          git push origin HEAD:master
