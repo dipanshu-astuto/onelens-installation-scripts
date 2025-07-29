@@ -1,20 +1,18 @@
 apiVersion: v2
 description: A Helm chart for deploying Kubernetes Jobs and CronJobs
 keywords:
-- job
-- cronjob
-- kubernetes
-- helm
+  - job
+  - cronjob
+  - kubernetes
+  - helm
 maintainers:
-- email: your.email@example.com
-  name: Your Name
+  - email: your.email@example.com
+    name: Your Name
 name: onelensdeployer
 sources:
-- https://github.com/your-repo/job-cronjob-chart
+  - https://github.com/your-repo/job-cronjob-chart
 type: application
-version: 1.1.0
-
-
+version: 1.3.0
 #RELEASE-NOTE
 #0.1.0 - Very stable version
 #0.2.0 - Changes the name of the cronjob
