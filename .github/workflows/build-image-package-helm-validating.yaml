@@ -390,17 +390,17 @@ jobs:
       #     git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
       #     git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
 
-      - name: Extract packaged Helm chart version
-        run: |
-          VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
-          echo "$VERSION" > helm-package-version.txt
-          echo "Packaged Helm chart version: $VERSION"
+      # - name: Extract packaged Helm chart version
+      #   run: |
+      #     VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+      #     echo "$VERSION" > helm-package-version.txt
+      #     echo "Packaged Helm chart version: $VERSION"
 
-      - name: Upload Helm package version artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm-package-version
-          path: helm-package-version.txt
+      # - name: Upload Helm package version artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: helm-package-version
+      #     path: helm-package-version.txt
 
 
 
@@ -611,17 +611,17 @@ jobs:
       #     # Force push to overwrite any conflicts (use with caution)
       #     git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
 
-      - name: Extract packaged Helm chart version
-        run: |
-          VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
-          echo "$VERSION" > helm-package-version.txt
-          echo "Packaged Helm chart version: $VERSION"
+      # - name: Extract packaged Helm chart version
+      #   run: |
+      #     VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+      #     echo "$VERSION" > helm-package-version.txt
+      #     echo "Packaged Helm chart version: $VERSION"
 
-      - name: Upload Helm package version artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm-package-version
-          path: helm-package-version.txt
+      # - name: Upload Helm package version artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: helm-package-version
+      #     path: helm-package-version.txt
 
           
 #validating helm charst
