@@ -25,8 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: master            # ✅ Ensure we checkout master branch
-          fetch-depth: 0         # ✅ Get full history for tags, branches
+          ref: master            
+          fetch-depth: 0        
 
       - name: Install yq and Helm
         run: |
@@ -50,6 +50,7 @@ jobs:
         run: |
           echo "🔄 Updating $AGENT_CHART_DIR"
           yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
           echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
@@ -58,7 +59,7 @@ jobs:
         run: |
           echo "🔄 Updating $DEPLOYER_CHART_DIR"
           yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
-
+       
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
