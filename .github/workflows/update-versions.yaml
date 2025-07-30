@@ -49,16 +49,16 @@ jobs:
       - name: Update onelens-agent chart files
         run: |
           echo "🔄 Updating $AGENT_CHART_DIR"
-          yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
-          yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".version = \"${{ env.chart_version }}\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".appVersion = \"${{ env.chart_version }}\"" -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
-          echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
+          echo -e "${{ env.chart_version }}\tAutomated update from workflow\t${{ env.chart_version }}" >> "$AGENT_CHART_DIR/version.md"
 
       - name: Update onelensdeployer chart files
         run: |
           echo "🔄 Updating $DEPLOYER_CHART_DIR"
-          yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
+          yq e ".version = \"${{ env.chart_version }}\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
        
       - name: Commit and push changes
         env:
@@ -72,7 +72,5 @@ jobs:
           git add $AGENT_CHART_DIR/version.md
           git add $DEPLOYER_CHART_DIR/Chart.yaml
 
-          git commit -m "Bump charts to version $chart_version" || echo "No changes to commit"
-          
-          # ✅ Fix for detached HEAD: push explicitly to master
+          git commit -m "Bump charts to version ${{ env.chart_version }}" || echo "No changes to commit"
           git push origin HEAD:master
