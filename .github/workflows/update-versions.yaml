@@ -39,21 +39,27 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             VERSION="${{ github.event.inputs.chart_version }}"
+            TAG="v${VERSION}"
           else
-            VERSION="${GITHUB_REF#refs/tags/}"
-            VERSION="${VERSION#v}"
+            TAG="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG#v}"
           fi
           echo "Using chart version: $VERSION"
+          echo "Using image tag: $TAG"
           echo "chart_version=$VERSION" >> $GITHUB_ENV
+          echo "image_tag=$TAG" >> $GITHUB_ENV
 
       - name: Update onelens-agent chart files
         run: |
           echo "🔄 Updating $AGENT_CHART_DIR"
-          
+
           yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
+
+          # Update image tag with 'v' prefix
+          yq e ".onelens-agent.image.tag = \"$image_tag\"" -i "$AGENT_CHART_DIR/values.yaml"
 
           VERSION_FILE="$AGENT_CHART_DIR/version.md"
 
@@ -64,8 +70,8 @@ jobs:
             echo "|---------|------------------|--------------------|" >> "$VERSION_FILE"
           fi
 
-          # Append new version row (customize Short Description if needed)
-          echo "| $chart_version | Versioning Changes | $chart_version |" >> "$VERSION_FILE"
+          # Append new version row
+          echo "| $chart_version | Versioning Changes | $image_tag |" >> "$VERSION_FILE"
 
       - name: Update onelensdeployer chart files
         run: |
@@ -80,6 +86,7 @@ jobs:
           git config user.email "github-actions@github.com"
           git add $AGENT_CHART_DIR/Chart.yaml
           git add $AGENT_CHART_DIR/Chart.lock
+          git add $AGENT_CHART_DIR/values.yaml
           git add $AGENT_CHART_DIR/version.md
           git add $DEPLOYER_CHART_DIR/Chart.yaml
           git commit -m "Bump charts to version $chart_version" || echo "No changes to commit"
