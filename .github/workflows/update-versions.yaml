@@ -51,7 +51,7 @@ jobs:
           export chart_version="${{ env.chart_version }}"
           echo "🔄 Updating $AGENT_CHART_DIR"
           yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
-          yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e '.appVersion = env(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
           echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
