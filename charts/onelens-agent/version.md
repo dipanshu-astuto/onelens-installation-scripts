@@ -19,3 +19,4 @@
 1.3.0	Automated update from workflow	1.3.0
 1.3.0	Automated update from workflow	1.3.0
 1.3.0	Automated update from workflow	1.3.0
+1.3.0	Automated update from workflow	1.3.0
