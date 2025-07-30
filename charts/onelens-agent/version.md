@@ -11,3 +11,4 @@
 | 0.1.1-beta.4 | Support for imagePullSecrets | 0.1.1-beta.4 |
 | 1.1.0 | Versioning Changes | 1.1.0 |
 | 1.1.0 | Versioning Changes | 1.1.0 |
+| v1.5.0 | Versioning Changes | v1.5.0 |
