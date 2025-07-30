@@ -12,3 +12,4 @@
 | 1.1.0 | Versioning Changes | 1.1.0 |
 | 1.1.0 | Versioning Changes | 1.1.0 |
 | v1.5.0 | Versioning Changes | v1.5.0 |
+| v1.1.0 | Versioning Changes | v1.1.0 |
