@@ -25,8 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: master            
-          fetch-depth: 0        
+          ref: master
+          fetch-depth: 0
 
       - name: Install yq and Helm
         run: |
@@ -48,18 +48,20 @@ jobs:
 
       - name: Update onelens-agent chart files
         run: |
+          export chart_version="${{ env.chart_version }}"
           echo "🔄 Updating $AGENT_CHART_DIR"
-          yq e ".version = \"${{ env.chart_version }}\"" -i "$AGENT_CHART_DIR/Chart.yaml"
-          yq e ".appVersion = \"${{ env.chart_version }}\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".version = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
+          yq e ".appVersion = \"$chart_version\"" -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.yaml"
           yq e '(.dependencies[] | select(.name == "onelens-agent-base") .version) = strenv(chart_version)' -i "$AGENT_CHART_DIR/Chart.lock"
-          echo -e "${{ env.chart_version }}\tAutomated update from workflow\t${{ env.chart_version }}" >> "$AGENT_CHART_DIR/version.md"
+          echo -e "$chart_version\tAutomated update from workflow\t$chart_version" >> "$AGENT_CHART_DIR/version.md"
 
       - name: Update onelensdeployer chart files
         run: |
+          export chart_version="${{ env.chart_version }}"
           echo "🔄 Updating $DEPLOYER_CHART_DIR"
-          yq e ".version = \"${{ env.chart_version }}\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
-       
+          yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
+
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
