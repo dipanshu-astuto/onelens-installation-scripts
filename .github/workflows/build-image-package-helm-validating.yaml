@@ -60,56 +60,58 @@ jobs:
 
   detect_docker_changes:
     needs: [validate-branch]
-    if: github.event_name != 'workflow_dispatch' || needs.validate-branch.result == 'success'
+    if: |
+      (github.event_name != 'workflow_dispatch' || needs.validate-branch.result == 'success') &&
+      github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
       docker_changed: ${{ steps.check_docker.outputs.changed }}
       entrypoint_changed: ${{ steps.check_entrypoint.outputs.changed }}
       should_build: ${{ steps.determine_build.outputs.should_build }}
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2  # Needed to compare HEAD and HEAD^ directly
 
-      - name: Check if Dockerfile changed
+      - name: Show changed files between HEAD and HEAD^
+        run: |
+          echo "Comparing HEAD and HEAD^"
+          git diff --name-only HEAD^ HEAD || echo "Could not diff HEAD^ HEAD"
+
+      - name: Check if Dockerfile changed in last commit
         id: check_docker
         run: |
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            docker_diff=$(git diff --name-only HEAD^ HEAD | grep '^Dockerfile' || true)
-          else
-            docker_diff=$(git diff --name-only HEAD | grep '^Dockerfile' || true)
-          fi
-
+          docker_diff=$(git diff --name-only HEAD^ HEAD | grep -E '(^|/)Dockerfile' || true)
+          echo "Dockerfile diff: $docker_diff"
           if [ -n "$docker_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check if entrypoint changed
+      - name: Check if entrypoint.sh changed in last commit
         id: check_entrypoint
         run: |
-          if git rev-parse HEAD^ >/dev/null 2>&1; then
-            entrypoint_diff=$(git diff --name-only HEAD^ HEAD | grep '^entrypoint.sh' || true)
-          else
-            entrypoint_diff=$(git diff --name-only HEAD | grep '^entrypoint.sh' || true)
-          fi
-
+          entrypoint_diff=$(git diff --name-only HEAD^ HEAD | grep -E '(^|/)entrypoint\.sh' || true)
+          echo "Entrypoint diff: $entrypoint_diff"
           if [ -n "$entrypoint_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Determine if build should proceed
+      - name: Determine if Docker build should proceed
         id: determine_build
         run: |
-          if [ "${{ steps.check_docker.outputs.changed }}" == "true" ] || [ "${{ steps.check_entrypoint.outputs.changed }}" == "true" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "${{ steps.check_docker.outputs.changed }}" == "true" ] || \
+             [ "${{ steps.check_entrypoint.outputs.changed }}" == "true" ] || \
+             [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "should_build=false" >> $GITHUB_OUTPUT
           fi
+
 
   get-image-version:
     needs: [validate-branch]
