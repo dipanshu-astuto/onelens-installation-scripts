@@ -316,6 +316,9 @@ jobs:
           git config user.name "GitHub Action"
           git status
           git add onelensdeployer-*.tgz index.yaml
+          echo "Current branch: $(git branch --show-current)"
+          echo "Latest commit:"
+          git log -1
           if git diff --cached --quiet; then
             echo "Nothing to commit"
           else
