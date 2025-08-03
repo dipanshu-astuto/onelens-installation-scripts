@@ -339,42 +339,42 @@ jobs:
         run: |
           aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.us-east-1.amazonaws.com
 
-      # - name: Prepare chart packaging
-      #   working-directory: charts/onelensdeployer
-      #   run: |
-      #     echo "Updating Helm dependencies"
-      #     helm dependency update
-      #     echo "Packaging Helm chart"
-      #     helm package .
-      #     pwd
+      - name: Prepare chart packaging
+        working-directory: charts/onelensdeployer
+        run: |
+          echo "Updating Helm dependencies"
+          helm dependency update
+          echo "Packaging Helm chart"
+          helm package .
+          pwd
 
-      # - name: Commit and push packaged chart to root
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
+      - name: Commit and push packaged chart to root
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
 
-      #     echo " Updating Helm repo index"
-      #     helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+          echo " Updating Helm repo index"
+          helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
 
-      #     git config user.name "github-actions"
-      #     git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-      #     git add onelensdeployer-*.tgz index.yaml
-      #     git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
-      #     git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+          git add onelensdeployer-*.tgz index.yaml
+          git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
 
-      # - name: Extract packaged Helm chart version
-      #   run: |
-      #     VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
-      #     echo "$VERSION" > helm-package-version.txt
-      #     echo "Packaged Helm chart version: $VERSION"
+      - name: Extract packaged Helm chart version
+        run: |
+          VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+          echo "$VERSION" > helm-package-version.txt
+          echo "Packaged Helm chart version: $VERSION"
 
-      # - name: Upload Helm package version artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: helm-package-version
-      #     path: helm-package-version.txt
+      - name: Upload Helm package version artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package-version
+          path: helm-package-version.txt
 
 # Package Onelens-Agent Helm Chart
 
@@ -412,47 +412,47 @@ jobs:
         run: |
           aws ecr get-login-password --region ap-south-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.ap-south-1.amazonaws.com
 
-      # - name: Prepare chart packaging
-      #   if: steps.version_check.outputs.should_skip == 'false'
-      #   working-directory: charts/onelens-agent
-      #   run: |
-      #     echo " Updating Helm dependencies"
-      #     helm dependency update
-      #     echo " Packaging Helm chart"
-      #     helm package .
+      - name: Prepare chart packaging
+        if: steps.version_check.outputs.should_skip == 'false'
+        working-directory: charts/onelens-agent
+        run: |
+          echo " Updating Helm dependencies"
+          helm dependency update
+          echo " Packaging Helm chart"
+          helm package .
 
-      # - name: Commit and push packaged chart to root
-      #   if: steps.version_check.outputs.should_skip == 'false'
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     # Move the .tgz Helm package to the repo root
-      #     mv charts/onelens-agent/onelens-agent-*.tgz .
-      #     echo " Updating Helm repo index"
-      #     helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
+      - name: Commit and push packaged chart to root
+        if: steps.version_check.outputs.should_skip == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Move the .tgz Helm package to the repo root
+          mv charts/onelens-agent/onelens-agent-*.tgz .
+          echo " Updating Helm repo index"
+          helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
           
-      #     # Set GitHub Actions bot as the commit author
-      #     git config user.name "github-actions"
-      #     git config user.email "github-actions@github.com"
+          # Set GitHub Actions bot as the commit author
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           
-      #     # Stage and commit the package
-      #     git add onelens-agent-*.tgz index.yaml
-      #     git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
+          # Stage and commit the package
+          git add onelens-agent-*.tgz index.yaml
+          git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
           
-      #     # Force push to overwrite any conflicts (use with caution)
-      #     git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+          # Force push to overwrite any conflicts (use with caution)
+          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
 
-      # - name: Extract packaged Helm chart version
-      #   run: |
-      #     VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
-      #     echo "$VERSION" > helm-package-version.txt
-      #     echo "Packaged Helm chart version: $VERSION"
+      - name: Extract packaged Helm chart version
+        run: |
+          VERSION=$(yq e '.version' charts/onelensdeployer/Chart.yaml)
+          echo "$VERSION" > helm-package-version.txt
+          echo "Packaged Helm chart version: $VERSION"
 
-      # - name: Upload Helm package version artifact
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: helm-package-version
-      #     path: helm-package-version.txt
+      - name: Upload Helm package version artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-package-version
+          path: helm-package-version.txt
 
 # Validating helm charts
 
