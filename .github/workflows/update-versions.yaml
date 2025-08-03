@@ -78,6 +78,12 @@ jobs:
           echo "🔄 Updating $DEPLOYER_CHART_DIR"
           yq e ".version = \"$chart_version\"" -i "$DEPLOYER_CHART_DIR/Chart.yaml"
 
+      - name: Update onelensdeployer image tags
+        run: |
+          echo "📝 Updating image tags in values.yaml"
+          yq e ".job.image.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
+          yq e ".cronjob.image.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
+
       - name: Commit and push changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -89,5 +95,6 @@ jobs:
           git add $AGENT_CHART_DIR/values.yaml
           git add $AGENT_CHART_DIR/version.md
           git add $DEPLOYER_CHART_DIR/Chart.yaml
+          git add $DEPLOYER_CHART_DIR/values.yaml
           git commit -m "Bump charts to version $chart_version" || echo "No changes to commit"
           git push origin HEAD:master
