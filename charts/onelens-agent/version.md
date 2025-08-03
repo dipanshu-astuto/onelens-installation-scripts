@@ -35,3 +35,4 @@
 | 1.2.0 | Versioning Changes | v1.2.0 |
 | 1.2.0 | Versioning Changes | v1.2.0 |
 | 1.2.0 | Versioning Changes | v1.2.0 |
+| 1.2.0 | Versioning Changes | v1.2.0 |
