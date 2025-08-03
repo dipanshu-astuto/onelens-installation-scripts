@@ -296,10 +296,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pwd
-          mv charts/onelensdeployer/onelensdeployer-*.tgz .
+          mv /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/charts/onelensdeployer/onelensdeployer-*.tgz /home/runner/work/onelens-installation-scripts/onelens-installation-scripts/
 
-          echo " Updating Helm repo index"
+          echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
 
           git config user.name "github-actions"
@@ -318,7 +317,7 @@ jobs:
       - name: Upload Helm package version artifact
         uses: actions/upload-artifact@v4
         with:
-          name: helm-package-version-deployer
+          name: helm-package-version
           path: helm-package-version.txt
 
 # Package Onelens-Agent Helm Chart
