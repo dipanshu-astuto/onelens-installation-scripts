@@ -373,7 +373,7 @@ jobs:
       - name: Upload Helm package version artifact
         uses: actions/upload-artifact@v4
         with:
-          name: helm-package-version
+          name: helm-package-version-deployer
           path: helm-package-version.txt
 
 # Package Onelens-Agent Helm Chart
@@ -451,7 +451,7 @@ jobs:
       - name: Upload Helm package version artifact
         uses: actions/upload-artifact@v4
         with:
-          name: helm-package-version
+          name: helm-package-version-agent
           path: helm-package-version.txt
 
 # Validating helm charts
