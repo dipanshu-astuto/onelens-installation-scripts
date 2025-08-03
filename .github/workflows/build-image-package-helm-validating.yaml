@@ -400,7 +400,6 @@ jobs:
           version: v3.13.3
           
       - name: Configure AWS Credentials
-        if: steps.version_check.outputs.should_skip == 'false'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
@@ -408,12 +407,10 @@ jobs:
           role-session-name: GitHubActionsSession
 
       - name: Authenticate Helm with AWS ECR
-        if: steps.version_check.outputs.should_skip == 'false'
         run: |
           aws ecr get-login-password --region ap-south-1 | helm registry login --username AWS --password-stdin 609916866699.dkr.ecr.ap-south-1.amazonaws.com
 
       - name: Prepare chart packaging
-        if: steps.version_check.outputs.should_skip == 'false'
         working-directory: charts/onelens-agent
         run: |
           echo " Updating Helm dependencies"
@@ -422,7 +419,6 @@ jobs:
           helm package .
 
       - name: Commit and push packaged chart to root
-        if: steps.version_check.outputs.should_skip == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
