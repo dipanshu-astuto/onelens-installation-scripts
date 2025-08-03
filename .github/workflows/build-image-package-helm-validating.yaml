@@ -58,61 +58,6 @@ jobs:
             echo " Not a manual trigger, skipping branch validation."
           fi
 
-  detect_docker_changes:
-    needs: [validate-branch]
-    if: |
-      (github.event_name != 'workflow_dispatch' || needs.validate-branch.result == 'success') &&
-      github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    outputs:
-      docker_changed: ${{ steps.check_docker.outputs.changed }}
-      entrypoint_changed: ${{ steps.check_entrypoint.outputs.changed }}
-      should_build: ${{ steps.determine_build.outputs.should_build }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 3  # Needed to compare HEAD^ and HEAD^^
-
-      - name: Show changed files between HEAD^^ and HEAD^
-        run: |
-          echo "Comparing HEAD^^ and HEAD^"
-          git diff --name-only HEAD^^ HEAD^ || echo "Could not diff HEAD^^ HEAD^"
-
-      - name: Check if Dockerfile changed in previous commit (before latest)
-        id: check_docker
-        run: |
-          docker_diff=$(git diff --name-only HEAD^^ HEAD^ | grep -E '(^|/)Dockerfile' || true)
-          echo "Dockerfile diff: $docker_diff"
-          if [ -n "$docker_diff" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check if entrypoint.sh changed in previous commit (before latest)
-        id: check_entrypoint
-        run: |
-          entrypoint_diff=$(git diff --name-only HEAD^^ HEAD^ | grep -E '(^|/)entrypoint\.sh' || true)
-          echo "Entrypoint diff: $entrypoint_diff"
-          if [ -n "$entrypoint_diff" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Determine if Docker build should proceed
-        id: determine_build
-        run: |
-          if [ "${{ steps.check_docker.outputs.changed }}" == "true" ] || \
-             [ "${{ steps.check_entrypoint.outputs.changed }}" == "true" ] || \
-             [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_build=false" >> $GITHUB_OUTPUT
-          fi
-
-
   get-image-version:
     needs: [validate-branch]
     if: github.event_name != 'workflow_dispatch' || needs.validate-branch.result == 'success'
@@ -136,8 +81,7 @@ jobs:
           echo "Image version: v$VERSION"
 
   build-docker:
-    needs: [detect_docker_changes, get-image-version]
-    if: needs.detect_docker_changes.outputs.should_build == 'true'
+    needs: [get-image-version]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
