@@ -458,7 +458,6 @@ jobs:
 
   validate_helm_chart:
     needs:
-      - package_and_push_helm
       - validate-and-package
     if: |
       (github.event_name != 'workflow_dispatch') || needs.validate-branch.result == 'success'
