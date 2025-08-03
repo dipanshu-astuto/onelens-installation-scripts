@@ -81,8 +81,8 @@ jobs:
       - name: Update onelensdeployer image tags
         run: |
           echo "📝 Updating image tags in values.yaml"
-          yq e ".job.image.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
-          yq e ".cronjob.image.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
+          yq e ".job.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
+          yq e ".cronjob.tag = \"$image_tag\"" -i "$DEPLOYER_CHART_DIR/values.yaml"
 
       - name: Commit and push changes
         env:
