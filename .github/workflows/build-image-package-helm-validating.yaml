@@ -72,17 +72,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Needed to compare HEAD and HEAD^ directly
+          fetch-depth: 3  # Needed to compare HEAD^ and HEAD^^
 
-      - name: Show changed files between HEAD and HEAD^
+      - name: Show changed files between HEAD^^ and HEAD^
         run: |
-          echo "Comparing HEAD and HEAD^"
-          git diff --name-only HEAD^ HEAD || echo "Could not diff HEAD^ HEAD"
+          echo "Comparing HEAD^^ and HEAD^"
+          git diff --name-only HEAD^^ HEAD^ || echo "Could not diff HEAD^^ HEAD^"
 
-      - name: Check if Dockerfile changed in last commit
+      - name: Check if Dockerfile changed in previous commit (before latest)
         id: check_docker
         run: |
-          docker_diff=$(git diff --name-only HEAD^ HEAD | grep -E '(^|/)Dockerfile' || true)
+          docker_diff=$(git diff --name-only HEAD^^ HEAD^ | grep -E '(^|/)Dockerfile' || true)
           echo "Dockerfile diff: $docker_diff"
           if [ -n "$docker_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -90,10 +90,10 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check if entrypoint.sh changed in last commit
+      - name: Check if entrypoint.sh changed in previous commit (before latest)
         id: check_entrypoint
         run: |
-          entrypoint_diff=$(git diff --name-only HEAD^ HEAD | grep -E '(^|/)entrypoint\.sh' || true)
+          entrypoint_diff=$(git diff --name-only HEAD^^ HEAD^ | grep -E '(^|/)entrypoint\.sh' || true)
           echo "Entrypoint diff: $entrypoint_diff"
           if [ -n "$entrypoint_diff" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
