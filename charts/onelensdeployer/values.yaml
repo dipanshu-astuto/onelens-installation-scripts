@@ -2,6 +2,7 @@ job:
   enabled: true
   name: onelensdeployerjob
   image: public.ecr.aws/w7k6q5m9/onelens-deployer
+  tag: v1.2.3
   imagePullPolicy: Always
   restartPolicy: Never
   backoffLimit: 2 
@@ -34,6 +35,7 @@ cronjob:
   name: onelensupdater
   schedule: "0 2 * * *"
   image: public.ecr.aws/w7k6q5m9/onelens-deployer
+  tag: v1.2.3
   restartPolicy: Never
   env: 
     deployment_type: cronjob
