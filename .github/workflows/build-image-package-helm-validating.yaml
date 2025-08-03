@@ -310,13 +310,18 @@ jobs:
           pwd
           echo "🗂️ Updating Helm repo index"
           helm repo index . --url https://astuto-ai.github.io/onelens-installation-scripts/
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
+          set -e
+          
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git status
           git add onelensdeployer-*.tgz index.yaml
-          git commit -m "Add packaged Helm chart and update index" || echo "Nothing to commit"
-          git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "Add packaged Helm chart and update index"
+            git push --force https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:master
+          fi
 
       - name: Extract packaged Helm chart version
         run: |
