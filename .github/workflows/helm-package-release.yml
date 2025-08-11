@@ -151,7 +151,8 @@ jobs:
         run: |
           cd gh-pages-repo
           echo "Updating Helm repository index..."
-          helm repo index . --url https://dipanshu-astuto.github.io/onelens-installation-scripts/
+          # Use --merge to preserve existing entries and their timestamps
+          helm repo index . --url https://dipanshu-astuto.github.io/onelens-installation-scripts/ --merge index.yaml
           echo "Updated index.yaml"
 
       - name: Create Pull Request to gh-pages
