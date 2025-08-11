@@ -185,9 +185,6 @@ jobs:
             ${{ needs.validate-and-determine-version.outputs.is_release == 'true' && 'This release has been validated and is ready for production use.' || 'This is a release candidate. Please test thoroughly before promoting to production.' }}
             
             **Merge this PR to publish to GitHub Pages Helm repository.**
-          labels: |
-            helm-charts
-            ${{ needs.validate-and-determine-version.outputs.is_release == 'true' && 'production' || 'release-candidate' }}
           assignees: ${{ github.actor }}
           draft: false
           delete-branch: true
