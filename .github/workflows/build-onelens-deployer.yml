@@ -12,6 +12,15 @@ on:
         required: true
         type: string
 
+env:
+  # Docker Configuration
+  DOCKER_REGISTRY: "public.ecr.aws/w7k6q5m9"
+  DOCKER_IMAGE_NAME: "onelens-deployer"
+  
+  # AWS Configuration
+  AWS_ECR_ROLE_ARN: "arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role"
+  AWS_ECR_REGION: "us-east-1"
+
 permissions:
   id-token: write
   contents: read
@@ -57,8 +66,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
-          aws-region: us-east-1
+          role-to-assume: ${{ env.AWS_ECR_ROLE_ARN }}
+          aws-region: ${{ env.AWS_ECR_REGION }}
           role-session-name: GitHubActionsSession
 
       - name: Login to Amazon ECR Public
@@ -74,14 +83,14 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: false
-          tags: public.ecr.aws/w7k6q5m9/onelens-deployer:${{ needs.determine-tag.outputs.image_tag }}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.determine-tag.outputs.image_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           load: true
 
       - name: Save Docker image for scanning
         run: |
-          docker save public.ecr.aws/w7k6q5m9/onelens-deployer:${{ needs.determine-tag.outputs.image_tag }} -o /tmp/image.tar
+          docker save ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.determine-tag.outputs.image_tag }} -o /tmp/image.tar
           echo "image_exists=true" >> $GITHUB_OUTPUT
 
       - name: Upload image artifact
@@ -111,7 +120,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.30.0
         with:
-          image-ref: 'public.ecr.aws/w7k6q5m9/onelens-deployer:${{ needs.determine-tag.outputs.image_tag }}'
+          image-ref: '${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.determine-tag.outputs.image_tag }}'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -126,7 +135,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (table output - blocking)
         uses: aquasecurity/trivy-action@0.30.0
         with:
-          image-ref: 'public.ecr.aws/w7k6q5m9/onelens-deployer:${{ needs.determine-tag.outputs.image_tag }}'
+          image-ref: '${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.determine-tag.outputs.image_tag }}'
           format: 'table'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'  # This will fail the job if vulnerabilities are found
@@ -150,8 +159,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::609916866699:role/onelens-agent-github-actions-ecr-role
-          aws-region: us-east-1
+          role-to-assume: ${{ env.AWS_ECR_ROLE_ARN }}
+          aws-region: ${{ env.AWS_ECR_REGION }}
           role-session-name: GitHubActionsSession
 
       - name: Login to Amazon ECR Public
@@ -175,7 +184,7 @@ jobs:
         run: |
           echo "Successfully built and pushed Docker image"
           echo "Tag: ${{ needs.determine-tag.outputs.image_tag }}"
-          echo "Registry: public.ecr.aws/w7k6q5m9/onelens-deployer"
+          echo "Registry: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}"
           echo "Platforms: linux/amd64, linux/arm64"
           echo "Security: Passed Trivy scan"
           echo "Event: ${{ github.event_name }}"
