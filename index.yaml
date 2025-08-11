@@ -3,7 +3,7 @@ entries:
   onelens-agent:
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2025-08-11T10:22:48.988139285Z"
+    created: "2025-08-11T10:49:54.553749745Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -26,11 +26,11 @@ entries:
     name: onelens-agent
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelens-agent-1.2.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelens-agent-1.2.0.tgz
     version: 1.2.0
   - apiVersion: v2
     appVersion: 1.2.0
-    created: "2025-08-11T10:22:48.978671932Z"
+    created: "2025-08-11T10:49:54.539904132Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -46,18 +46,18 @@ entries:
       repository: https://prometheus-community.github.io/helm-charts
       version: 0.1.1
     description: Helm chart for the OneLens Agent
-    digest: 0b2af708e7377476503ccab1bd6562a79526447e035558f92a52e02d75e57845
+    digest: 5a0989ad1bb75f3d631dbc9a5e199f1250e61902cbf19db88f907b35065e2974
     maintainers:
     - email: support@onelens.ai
       name: OneLens
     name: onelens-agent
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelens-agent-1.2.0-rc.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelens-agent-1.2.0-rc.tgz
     version: 1.2.0-rc
   - apiVersion: v2
     appVersion: 1.1.0
-    created: "2025-08-11T10:22:48.969268186Z"
+    created: "2025-08-11T10:49:54.524756558Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -80,11 +80,11 @@ entries:
     name: onelens-agent
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelens-agent-1.1.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelens-agent-1.1.0.tgz
     version: 1.1.0
   - apiVersion: v2
     appVersion: 0.1.1-beta.4
-    created: "2025-08-11T10:22:48.959369193Z"
+    created: "2025-08-11T10:49:54.510631789Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -107,11 +107,11 @@ entries:
     name: onelens-agent
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelens-agent-0.1.1-beta.4.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelens-agent-0.1.1-beta.4.tgz
     version: 0.1.1-beta.4
   - apiVersion: v2
     appVersion: 0.1.1-beta.3
-    created: "2025-08-11T10:22:48.949960398Z"
+    created: "2025-08-11T10:49:54.501061435Z"
     dependencies:
     - alias: onelens-agent
       condition: onelens-agent.enabled
@@ -134,11 +134,11 @@ entries:
     name: onelens-agent
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelens-agent-0.1.1-beta.3.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelens-agent-0.1.1-beta.3.tgz
     version: 0.1.1-beta.3
   onelensdeployer:
   - apiVersion: v2
-    created: "2025-08-11T10:22:48.991494004Z"
+    created: "2025-08-11T10:49:54.557743854Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: ba35da9dd1b3c2e13af527e6d36047da5040e32c7fee3123af9e06009bd67e86
     keywords:
@@ -154,12 +154,12 @@ entries:
     - https://github.com/your-repo/job-cronjob-chart
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelensdeployer-1.2.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-1.2.0.tgz
     version: 1.2.0
   - apiVersion: v2
-    created: "2025-08-11T10:22:48.990885389Z"
+    created: "2025-08-11T10:49:54.556911666Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
-    digest: 68116d43e20408a6c1ac12a6f8f74e2c2b9224ee9684790139ecae1f3050e82c
+    digest: aac10e25807c027111d16099843b9d25fc33663c7a6a80a0551b36104e9a234b
     keywords:
     - job
     - cronjob
@@ -173,10 +173,10 @@ entries:
     - https://github.com/your-repo/job-cronjob-chart
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelensdeployer-1.2.0-rc.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-1.2.0-rc.tgz
     version: 1.2.0-rc
   - apiVersion: v2
-    created: "2025-08-11T10:22:48.990378877Z"
+    created: "2025-08-11T10:49:54.556081562Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: e44f86f066c0f19931b32fbe59fdfd5e5261ee5f4eae3b9d5e25b711268370f0
     keywords:
@@ -192,10 +192,10 @@ entries:
     - https://github.com/your-repo/job-cronjob-chart
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelensdeployer-1.1.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-1.1.0.tgz
     version: 1.1.0
   - apiVersion: v2
-    created: "2025-08-11T10:22:48.989852076Z"
+    created: "2025-08-11T10:49:54.555290761Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 65f1a929553fc9761ac96793935e64749711dc5b4760512d8189b5aa0ea453cd
     keywords:
@@ -211,10 +211,10 @@ entries:
     - https://github.com/your-repo/job-cronjob-chart
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelensdeployer-0.2.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v2
-    created: "2025-08-11T10:22:48.989066158Z"
+    created: "2025-08-11T10:49:54.554475996Z"
     description: A Helm chart for deploying Kubernetes Jobs and CronJobs
     digest: 2da05ff3f2c0c3f14e2d6447d6b5c5ef1c765194a460053b9b1f6846c2124199
     keywords:
@@ -230,6 +230,6 @@ entries:
     - https://github.com/your-repo/job-cronjob-chart
     type: application
     urls:
-    - https://dipanshu-astuto.github.io/onelens-installation-scripts/onelensdeployer-0.1.0.tgz
+    - https://astuto-ai.github.io/onelens-installation-scripts/onelensdeployer-0.1.0.tgz
     version: 0.1.0
-generated: "2025-08-11T10:22:48.938684321Z"
+generated: "2025-08-11T10:49:54.491081515Z"
