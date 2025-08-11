@@ -7,9 +7,6 @@ on:
     tags:
       - 'v*'
   
-  release:
-    types: [published]
-  
   workflow_dispatch:
     inputs:
       tag:
@@ -38,9 +35,6 @@ jobs:
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
             echo "Using git tag: $TAG"
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
-            echo "Using release tag: $TAG"
           else
             TAG="latest"
             echo "Using default tag: $TAG"
@@ -187,9 +181,7 @@ jobs:
           echo "Platforms: linux/amd64, linux/arm64"
           echo "Security: Passed Trivy scan"
           echo "Event: ${{ github.event_name }}"
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "Production Release: ${{ github.event.release.tag_name }}"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "Manual Build: ${{ github.event.inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "Tag Build: ${GITHUB_REF#refs/tags/}"
