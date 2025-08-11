@@ -33,15 +33,14 @@ jobs:
         id: tag
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            TAG="${{ github.event.inputs.tag }}-rc"
-            echo "Using manual tag with RC suffix: $TAG"
+            TAG="${{ github.event.inputs.tag }}"
+            echo "Using manual tag: $TAG"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            BASE_TAG="${GITHUB_REF#refs/tags/}"
-            TAG="${BASE_TAG}-rc"
-            echo "Using git tag with RC suffix: $TAG"
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "Using git tag: $TAG"
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             TAG="${{ github.event.release.tag_name }}"
-            echo "Using release tag (production): $TAG"
+            echo "Using release tag: $TAG"
           else
             TAG="latest"
             echo "Using default tag: $TAG"
@@ -182,18 +181,18 @@ jobs:
 
       - name: Image build summary
         run: |
-          echo "✅ Successfully built and pushed Docker image"
-          echo "🏷️  Tag: ${{ needs.determine-tag.outputs.image_tag }}"
-          echo "📦 Registry: public.ecr.aws/w7k6q5m9/onelens-deployer"
-          echo "🏗️  Platforms: linux/amd64, linux/arm64"
-          echo "🔒 Security: Passed Trivy scan"
-          echo "🚀 Event: ${{ github.event_name }}"
+          echo "Successfully built and pushed Docker image"
+          echo "Tag: ${{ needs.determine-tag.outputs.image_tag }}"
+          echo "Registry: public.ecr.aws/w7k6q5m9/onelens-deployer"
+          echo "Platforms: linux/amd64, linux/arm64"
+          echo "Security: Passed Trivy scan"
+          echo "Event: ${{ github.event_name }}"
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            echo "🎯 Production Release: ${{ github.event.release.tag_name }}"
+            echo "Production Release: ${{ github.event.release.tag_name }}"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "🔧 Manual RC Build: ${{ github.event.inputs.tag }}-rc"
+            echo "Manual Build: ${{ github.event.inputs.tag }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "🏷️  Tag RC Build: ${GITHUB_REF#refs/tags/}-rc"
+            echo "Tag Build: ${GITHUB_REF#refs/tags/}"
           else
-            echo "🔄 Latest Build from master"
+            echo "Latest Build from master"
           fi
