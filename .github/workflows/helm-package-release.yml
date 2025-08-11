@@ -134,19 +134,22 @@ jobs:
           echo "Packaged charts:"
           ls -la packaged-charts/
 
-      - name: Checkout gh-pages branch
-        run: |
-          git fetch origin gh-pages:gh-pages
-          git checkout gh-pages
+      - name: Checkout gh-pages branch to separate directory
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-repo
+          clean: true
 
       - name: Copy packaged charts to gh-pages
         run: |
-          cp packaged-charts/*.tgz .
+          cp packaged-charts/*.tgz gh-pages-repo/
           echo "Charts in gh-pages:"
-          ls -la *.tgz
+          ls -la gh-pages-repo/*.tgz
 
       - name: Update Helm repository index
         run: |
+          cd gh-pages-repo
           echo "Updating Helm repository index..."
           helm repo index . --url https://dipanshu-astuto.github.io/onelens-installation-scripts/
           echo "Updated index.yaml"
@@ -155,6 +158,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          path: gh-pages-repo
           commit-message: |
             ${{ needs.validate-and-determine-version.outputs.is_release == 'true' && 'Release' || 'Release Candidate' }} Helm charts v${{ needs.validate-and-determine-version.outputs.chart_version }}
             
