@@ -203,7 +203,7 @@ All Docker images undergo security scanning using Trivy:
 
 1. **Configure AWS credentials** as repository secrets:
    - `AWS_REGION`
-   - OIDC role for ECR access
+   - `AWS_ECR_ROLE_ARN`
 
 2. **Ensure gh-pages branch** exists and is configured for GitHub Pages
 
