@@ -37,7 +37,7 @@ gh release create v1.2.3 --title "Release v1.2.3" --notes "Release notes here"
 
 #### List Available Helm Charts
 ```bash
-helm repo add onelens https://dipanshu-astuto.github.io/onelens-installation-scripts/
+helm repo add onelens https://astuto-ai.github.io/onelens-installation-scripts/
 helm repo update
 helm search repo onelens --versions --devel
 ```
